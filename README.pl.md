@@ -37,7 +37,8 @@ linii. Nie muszą czytać nic poza plikiem, który mają przed sobą, i to jest 
 siła.
 
 To narzędzie nie umie powiedzieć nic z tych rzeczy i nie próbuje. Nie ma zdania
-na temat tego, czy pusty catch jest zły. Ma za to resztę twojego repozytorium:
+na temat tego, czy pusty catch jest zły. Ma za to resztę twojego repozytorium,
+a zdanie, które z tego produkuje, ma taki kształt:
 
 > **5 z 7 obsług błędu na supabase w tym pliku niesie wynik obok wartości.
 > Ta jedna nie.**
@@ -91,32 +92,37 @@ połowę dowodu tam, gdzie jedno miejsce łamie kilka reguł naraz.
 
 ## Jak to wygląda
 
+<!-- lc:example lang=pl -->
 ```
-## [1] default-on-error   vap-account-panel.js:248
+## [1] default-on-error   api.js:44
 
      sb.rpc przy awarii odpowiada [], a [] znaczy tez "brak danych"
 
 W CZYM ODSTAJESZ OD WLASNEGO KODU
-     5 z 7 obslug bledu na supabase w tym pliku vap-account-panel.js niesie
-     wynik obok wartosci. Ta nie:
-       vap-account-panel.js:185   sb.rpc — odpowiada z wynikiem w srodku
-       vap-account-panel.js:225   sb.rpc — odpowiada z wynikiem w srodku
-       vap-account-panel.js:235   sb.rpc — odpowiada z wynikiem w srodku
-       vap-account-panel.js:202   sb.from.select — odpowiada z wynikiem w srodku
+     3 z 4 obslug bledu na supabase w tym pliku api.js niesie wynik obok wartosci. Ta nie:
+       api.js:13   sb.rpc — odpowiada z wynikiem w srodku
+       api.js:22   sb.rpc — odpowiada z wynikiem w srodku
+       api.js:31   sb.rpc — odpowiada z wynikiem w srodku
 
 DLACZEGO TO WAZNE
      [] to dokladnie to, co zdrowy odczyt zwraca, gdy naprawde nic nie ma.
-     Wolajacy dostaje jedno i to samo, wiec "nie dalem rady sprawdzic"
-     przychodzi przebrane za "sprawdzone, nie ma".
+     Wolajacy dostaje jedno i to samo, wiec "nie dalem rady sprawdzic" przychodzi
+     przebrane za "sprawdzone, nie ma".
 
 POPRAWKA
      Powiedz, ktore z dwojga — tak, jak juz robia to sasiedzi wyzej.
+     To nie usterka? Napisz `// looks-clean: ok — powod` w tej linii albo nad nia.
 ```
 
-Prawdziwe zgłoszenie w prawdziwym kodzie. Cztery zacytowane linie to ta część,
-której nie wyprodukowałby żaden zbiór reguł, a każdą z nich sprawdza
-`test/evidence.mjs`: że linia istnieje i że naprawdę robi to, co zgłoszenie o
-niej mówi.
+Odtwórz to u siebie:
+
+    $ looks-clean scan test/fixtures/project --rule default-on-error --top 1
+
+Wszystko powyżej to prawdziwy przebieg po `test/fixtures/project`, a
+`test/readme.mjs` uruchamia go ponownie i porównuje ten blok z wyjściem linia
+po linii. Trzy zacytowane linie to ta część, której nie wyprodukowałby żaden
+zbiór reguł, a `test/evidence.mjs` osobno sprawdza, że każda z nich istnieje
+i naprawdę robi to, co zgłoszenie o niej mówi.
 
 ## Od czego zacząć
 
@@ -242,7 +248,7 @@ sukcesem.
 | 6 | `npm run population` | że arytmetyka każdego zgłoszenia opisuje prawdziwą grupę |
 | 7 | `npm run evidence` | że każdy zacytowany sąsiad istnieje i robi to, co zgłoszenie mówi |
 | 8 | `npm run resilience` | pada głośno, nigdy po cichu |
-| 9 | `npm test` (`test/readme.mjs`) | że ta strona zgadza się z narzędziem |
+| 9 | `npm run readme` | że ta strona zgadza się z narzędziem i co wysłałby `npm pack` |
 | 10 | `npm run known-answers` | sześć prześledzonych ręcznie usterek, jako kontrakt |
 
 Każda warstwa ma sprawdzenie negatywne: została celowo zepsuta, pokazano, że

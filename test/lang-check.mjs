@@ -95,5 +95,46 @@ console.log('  ' + (bypasses.length ? 'FAIL  ' : 'PASS  ') +
 for (const b of bypasses.slice(0, 10)) console.log('        ' + b);
 if (bypasses.length) failed++;
 
+// ---------------------------------------------------------------- 4
+//
+// THE CODE ITSELF IS IN ONE LANGUAGE, AND IT IS ENGLISH.
+//
+// This tool was written by a Polish speaker, and the layers it was built from
+// arrived with Polish identifiers in them: `nowe`, `zniklo`, `zmienione`,
+// `bezZmian`, `powod`. They worked perfectly and were invisible to every test —
+// right up until somebody who does not read Polish opens `diffSnapshots` and
+// finds four of its five local variables unreadable.
+//
+// The dictionary is the one exception, because Polish sentences are its
+// content. Everywhere else — identifiers, comments, file names — English.
+{
+  const DIACRITICS = /[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/;
+  const POLISH_WORDS = /\b(nowe|zniklo|zmienione|bezZmian|zmiany|powod|poprzedni|biezacy|grupy|pominiete|wiek|stabilnosc|konwencja|populacja|rzadkosc|plik|katalog|sciezka|wynik|blad|czysto)\b/;
+  const offenders = [];
+  for (const f of SOURCES) {
+    if (f === path.join(REPO, 'src', 'lang.mjs')) continue;
+    const rel = path.relative(REPO, f).replace(/\\/g, '/');
+    fs.readFileSync(f, 'utf8').split(/\r?\n/).forEach((line, i) => {
+      if (DIACRITICS.test(line) || POLISH_WORDS.test(line))
+        offenders.push(rel + ':' + (i + 1) + '  ' + line.trim().slice(0, 60));
+    });
+  }
+  console.log('  ' + (offenders.length ? 'FAIL  ' : 'PASS  ') +
+    'the code is in English outside the dictionary');
+  for (const o of offenders.slice(0, 8)) console.log('        ' + o);
+  if (offenders.length) failed++;
+}
+
+// The file names too. A `zapis.mjs` beside a `snapshot.mjs` is the same problem
+// one level up, and no amount of English inside it helps.
+{
+  const bad = SOURCES.map(f => path.basename(f))
+    .filter(n => /[ąćęłńóśźż]/i.test(n) ||
+      /^(zapis|odczyt|reguly|jezyk|wynik|warstwa)\./.test(n));
+  console.log('  ' + (bad.length ? 'FAIL  ' : 'PASS  ') + 'the file names are in English');
+  for (const b of bad) console.log('        ' + b);
+  if (bad.length) failed++;
+}
+
 console.log('\n  ' + (failed ? failed + ' check(s) failed' : 'all checks passed'));
 if (failed) process.exit(1);

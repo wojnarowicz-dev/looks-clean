@@ -1,0 +1,17 @@
+# looks-clean — what a stranger must NOT receive.
+#
+# `files` in package.json is the allow-list and is the real control; this file
+# is the belt to its braces. Both are checked by test/readme.mjs, which runs
+# `npm pack --dry-run` and fails if anything below appears in the tarball.
+#
+# test/ is excluded on purpose. The suite reaches for two private repositories
+# by path, and shipping it would hand every installer a set of tests that skip
+# on their machine and say why — a confusing first impression of a tool whose
+# whole subject is telling "skipped" from "passed".
+test/
+.github/
+.env
+.env.*
+*.local
+.looks-clean/
+node_modules/

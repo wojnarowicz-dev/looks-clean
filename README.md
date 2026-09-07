@@ -36,7 +36,8 @@ any project, on any line. They need to read nothing but the file in front of
 them, and that is their strength.
 
 This tool cannot say any of that, and does not try. It has no view on whether an
-empty catch is bad. What it has is the rest of your repository:
+empty catch is bad. What it has is the rest of your repository, and the sentence
+it produces has this shape:
 
 > **5 of 7 error handlers on supabase in this file carry the outcome alongside
 > the value. This one does not.**
@@ -91,18 +92,18 @@ break several rules at once.
 
 ## What it looks like
 
+<!-- lc:example lang=en -->
 ```
-## [1] default-on-error   vap-account-panel.js:248
+## [1] default-on-error   api.js:44
 
      sb.rpc answers [] on failure, and [] also means "no data"
 
 WHERE YOU DIFFER FROM YOUR OWN CODE
-     5 of 7 error handlers on supabase in this file vap-account-panel.js carry
-     the outcome alongside the value. This one does not:
-       vap-account-panel.js:185   sb.rpc — answers with the outcome attached
-       vap-account-panel.js:225   sb.rpc — answers with the outcome attached
-       vap-account-panel.js:235   sb.rpc — answers with the outcome attached
-       vap-account-panel.js:202   sb.from.select — answers with the outcome attached
+     3 of 4 error handlers on supabase in this file api.js carry the outcome alongside the
+     value. This one does not:
+       api.js:13   sb.rpc — answers with the outcome attached
+       api.js:22   sb.rpc — answers with the outcome attached
+       api.js:31   sb.rpc — answers with the outcome attached
 
 WHY IT MATTERS
      [] is exactly what a healthy read returns when there is genuinely nothing
@@ -111,11 +112,18 @@ WHY IT MATTERS
 
 FIX
      Say which of the two it is, the way the neighbours above already do.
+     Not a defect? Write `// looks-clean: ok — reason` on that line, or above it.
 ```
 
-A real finding in real code. The four cited lines are the part no rulebook could
-have produced, and every one of them is checked by `test/evidence.mjs` to be a
-line that exists and really does what the finding says it does.
+Reproduce it:
+
+    $ looks-clean scan test/fixtures/project --rule default-on-error --top 1
+
+Everything above is a real run over `test/fixtures/project`, and
+`test/readme.mjs` re-runs it and compares this block with the output line for
+line. The three cited lines are the part no rulebook could have produced, and
+`test/evidence.mjs` separately checks that each of them exists and really does
+what the finding says it does.
 
 ## Getting started
 
@@ -238,7 +246,7 @@ not JavaScript, and the suite refuses to call that a pass.
 | 6 | `npm run population` | that each finding's arithmetic describes a real group |
 | 7 | `npm run evidence` | that every cited neighbour exists and does what the finding says |
 | 8 | `npm run resilience` | fail loudly, never quietly |
-| 9 | `npm test` (`test/readme.mjs`) | that this page agrees with the tool |
+| 9 | `npm run readme` | that this page agrees with the tool, and what `npm pack` would ship |
 | 10 | `npm run known-answers` | the six hand-traced defects, as a contract |
 
 Every layer has a negative check: it was broken on purpose, seen to fail, and

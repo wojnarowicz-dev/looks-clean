@@ -44,6 +44,7 @@ const CONFIG = path.join(HERE, 'fixtures', 'golden.config.json');
 const PAGES = [['README.md', 'en'], ['README.pl.md', 'pl']];
 
 let failed = 0;
+let unreachable = null;
 const check = (name, ok, detail) => {
   if (!ok) failed++;
   console.log('  ' + (ok ? 'ok    ' : 'FAIL  ') + name.padEnd(52) + (detail || ''));
@@ -212,17 +213,65 @@ check('the two pages link to each other',
 
 // ---------------------------------------------------------------- 5. the output example
 //
-// The sample report is quoted from a run against material that is not in this
-// repository, so the finding itself cannot be re-derived here. What CAN be
-// re-derived is that the shape is the shape the tool still prints: the section
-// headings in the example must be the headings the dictionary currently holds,
-// in the language of the page it appears on. A renamed heading would otherwise
-// leave both pages showing output the tool has not produced for months.
+// THE SAMPLE REPORT IS RE-RUN AND COMPARED LINE FOR LINE.
+//
+// The first version of both pages quoted a run against a private repository.
+// It was a better story — a real defect in shipped code — and it was
+// unverifiable: nobody reading the page could reproduce it, and nothing in this
+// repository could tell whether the tool still printed anything like it. A
+// sample output that cannot be checked is the same defect this tool reports,
+// written in a fenced code block.
+//
+// So the example is a run over `test/fixtures/project`, the block is tagged
+// with the language it was produced in, and it is regenerated here and diffed.
+// If a message changes, this fails and names the first line that moved.
 for (const [file, lang] of PAGES) {
+  const m = text[file].match(/<!--\s*lc:example\s+lang=(\w+)\s*-->\n```\n([\s\S]*?)\n```/);
+  if (!m) { check(file + ' carries a tagged output example', false, 'no lc:example block'); continue; }
+  check(file + ' tags the example with its language', m[1] === lang, 'lang=' + m[1]);
+
+  const r = spawnSync(process.execPath,
+    [CLI, 'scan', path.join(HERE, 'fixtures', 'project'), '--config', CONFIG,
+      '--rule', 'default-on-error', '--top', '1', '--lang', lang],
+    { cwd: ROOT, encoding: 'utf8', maxBuffer: 1e9 });
+  const lines = (r.stdout || '').split('\n');
+  const start = lines.findIndex(l => l.startsWith('## [1]'));
+  const end = lines.findIndex((l, i) => i > start && l.startsWith('...'));
+  const fresh = start < 0 || end < 0 ? null : lines.slice(start, end - 1).join('\n').replace(/\s+$/, '');
+
+  if (fresh === null) {
+    check(file + ' example is reproducible', false, 'the scan printed no first finding');
+    continue;
+  }
+  const shown = m[2].replace(/\s+$/, '').split('\n');
+  const got = fresh.split('\n');
+  let firstDiff = -1;
+  for (let i = 0; i < Math.max(shown.length, got.length); i++)
+    if (shown[i] !== got[i]) { firstDiff = i; break; }
+  check(file + ' example matches a fresh run', firstDiff === -1,
+    firstDiff === -1 ? got.length + ' lines identical'
+      : 'line ' + (firstDiff + 1) + ': page ' + JSON.stringify((shown[firstDiff] || '').slice(0, 40)) +
+        ' vs tool ' + JSON.stringify((got[firstDiff] || '').slice(0, 40)));
+
+  // And the headings in it must be the dictionary's current ones, so a renamed
+  // heading is named as such rather than showing up as an anonymous line diff.
   const wanted = ['secDeviation', 'secWhy', 'secFix'].map(k => TABLE[k][lang]);
-  const absent = wanted.filter(w => !text[file].includes(w));
-  check(file + ' shows the headings the tool prints', absent.length === 0,
-    absent.length ? 'not on the page: ' + absent.join(', ') : wanted.length + ' headings');
+  const absent = wanted.filter(w => !m[2].includes(w));
+  check(file + ' example shows the headings the tool prints', absent.length === 0,
+    absent.length ? 'not in the block: ' + absent.join(', ') : wanted.length + ' headings');
+}
+
+// ---------------------------------------------------------------- 5b. no private names
+//
+// The examples must be reproducible by a stranger, which also means they must
+// not name repositories a stranger cannot open. Private project names stay in
+// `test/known-answers.mjs`, where naming the material IS the point, and nowhere
+// else.
+{
+  const PRIVATE = /VideoAnalyzerProWeb|vap-account|vap-site|opinions-vap|i18n-vap|dream_analyzer/;
+  for (const [file] of PAGES)
+    check(file + ' names no private repository', !PRIVATE.test(text[file]),
+      (text[file].match(PRIVATE) || [''])[0]);
 }
 
 // ---------------------------------------------------------------- 6. the licence
@@ -246,10 +295,75 @@ for (const [file, lang] of PAGES) {
       /\bMIT\b/.test(text[file]) && text[file].includes(AUTHOR), '');
 }
 
+// ---------------------------------------------------------------- 7. the package
+//
+// WHAT A STRANGER ACTUALLY RECEIVES. Everything above checks the page; this
+// checks the parcel. `npm pack` is run for real rather than the allow-list in
+// package.json being read back, because the allow-list is a claim about the
+// tarball and the tarball is the fact — the same order of authority applied to
+// packaging.
+//
+// test/ is excluded deliberately: the suite reaches for two private
+// repositories by path, and shipping it would hand every installer a set of
+// tests that skip on their machine. A tool whose subject is telling "skipped"
+// from "passed" should not make that its first impression.
+{
+  // NPM IS RUN THROUGH ITS OWN JAVASCRIPT ENTRY POINT, and the two obvious
+  // spellings both failed on the machine this was written on:
+  //   `npm`      -> ENOENT: spawn does not apply PATHEXT to an extensionless name
+  //   `npm.cmd`  -> EINVAL: Node refuses to spawn a .cmd without a shell
+  // and `shell: true` earns a deprecation warning on every run — a warning
+  // nobody can silence is a line people learn to scroll past, including the
+  // next one. `npm-cli.js` under node is none of those things.
+  const candidates = [
+    process.env.npm_execpath,
+    path.join(path.dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npm-cli.js'),
+    path.join(path.dirname(process.execPath), '..', 'lib', 'node_modules', 'npm', 'bin', 'npm-cli.js'),
+  ].filter(Boolean).filter(p => /npm-cli\.js$/.test(p) && fs.existsSync(p));
+
+  let files = null;
+  let why = 'npm-cli.js was not found next to ' + process.execPath;
+  if (candidates.length) {
+    const r = spawnSync(process.execPath, [candidates[0], 'pack', '--dry-run', '--json'],
+      { cwd: ROOT, encoding: 'utf8', maxBuffer: 1e9 });
+    try { files = JSON.parse(r.stdout)[0].files.map(f => f.path.replace(/\\/g, '/')); }
+    catch (e) { why = 'could not read `npm pack --dry-run --json` (exit ' + r.status + ')'; }
+  }
+
+  if (!files) {
+    // NOT A PASS AND NOT A FAILURE. Nothing is wrong with the package; this
+    // machine could not be asked what the package contains. The layer exits 2,
+    // which is the runner's code for exactly that, and the difference between
+    // it and a green tick is the whole subject of this project.
+    unreachable = why;
+    console.log('  ????  ' + 'the package could not be inspected'.padEnd(52) + why);
+  } else {
+    const FORBIDDEN = [/^test\//, /^\.github\//, /(^|\/)\.env/, /^node_modules\//,
+      /^\.looks-clean\//, /\.local$/];
+    const leaked = files.filter(f => FORBIDDEN.some(re => re.test(f)));
+    check('the package ships nothing it should not', leaked.length === 0,
+      leaked.length ? leaked.join(', ') : files.length + ' files');
+
+    // And the control: a package that ships nothing at all also ships nothing
+    // forbidden. What must be there has to be there.
+    const REQUIRED = ['package.json', 'LICENSE', 'README.md', 'README.pl.md',
+      'bin/looks-clean.mjs', 'src/scan.mjs'];
+    const absent = REQUIRED.filter(f => !files.includes(f));
+    check('the package ships what it must', absent.length === 0,
+      absent.length ? 'missing: ' + absent.join(', ') : REQUIRED.length + ' required files');
+  }
+}
+
 console.log('\n  ' + (failed ? failed + ' failed' : 'both pages agree with the tool'));
 if (failed) {
   console.log('\n  The code is the fact and the README is the claim. Fix the claim, or fix');
   console.log('  the code and re-record — but a page of numbers that drifts away from what');
   console.log('  it describes is the defect this whole tool is about, written in prose.');
   process.exit(1);
+}
+if (unreachable) {
+  console.log('');
+  console.log('  One check could not be run on this machine, so it proves nothing:');
+  console.log('  ' + unreachable);
+  process.exit(2);
 }
