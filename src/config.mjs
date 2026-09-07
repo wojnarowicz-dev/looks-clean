@@ -150,6 +150,20 @@ export function loadConfig(argv = [], root = process.cwd()) {
       const s = norm(p);
       return regexes.some(r => r.test(s));
     },
+    /**
+     * WHICH pattern skipped this path, or null.
+     *
+     * A boolean is enough to do the skipping and not enough to explain it. A
+     * run that reads eleven files of a three-hundred-file project has to be
+     * able to name the rule that removed the rest — see the `notRead` report in
+     * src/collect.mjs, and the measurement in test/precision.json that made it
+     * necessary.
+     */
+    excludedBy(p) {
+      const s = norm(p);
+      const i = regexes.findIndex(r => r.test(s));
+      return i < 0 ? null : exclude[i];
+    },
     /** whether a finding with this id is hidden IN THE REPORT (the population stays) */
     isMuted(id) { return mute.has(id); },
     /**

@@ -19,7 +19,7 @@ Nie ma poglądów. Ma sąsiadów.
 <!-- lc:claim name=knownAnswersInScope value=5 -->
 <!-- lc:claim name=families value=8 -->
 <!-- lc:claim name=languages value=2 -->
-<!-- lc:claim name=messages value=135 -->
+<!-- lc:claim name=messages value=139 -->
 <!-- lc:claim name=fixtureFindings value=7 -->
 <!-- lc:claim name=fixturePlanted value=4 -->
 <!-- lc:claim name=cleanFindings value=0 -->
@@ -142,17 +142,42 @@ często leży tuż obok obu.
 
 ### Usterki, które pomiary znalazły w narzędziu
 
-Pięć, żadna niepoprawiona: `{ timeout }` zapisany skrótowo nie jest rozpoznawany
-jako limit; każde wywołanie `fs.*` jest traktowane jak odczyt, w tym zapisy,
-konstruktory strumieni i wywołania `*Sync`, które nigdy nie mogą mieć limitu;
-łańcuch `fsp.stat(...).catch(...)` liczy się dwa razy i jest zgłaszany dwa razy;
-awaria wykryta zwykłym predykatem trafia na ścieżkę pustki; a projekt, którego
-kod leży pod wykluczonym katalogiem, dostaje ciche zero.
+Pięć. **Cztery zostają niepoprawione celowo**, bo każda z nich zmienia to,
+*które* zgłoszenia wychodzą, a poprawienie ich i ponowny pomiar na tych samych
+projektach byłby strojeniem narzędzia pod własny test — a tak właśnie liczba
+trafności staje się bezwartościowa:
 
-Zostają niepoprawione celowo. Poprawienie ich i ponowny pomiar na tych samych
-projektach byłby strojeniem narzędzia pod własny test, a tak właśnie liczba
-trafności staje się bezwartościowa. Wykluczenie kodu testowego to co innego —
-poprawka zakresu, prawdziwa przed pomiarem, a nie z niego wyprowadzona.
+* `{ timeout }` zapisany skrótowo nie jest rozpoznawany jako limit
+* każde wywołanie `fs.*` jest traktowane jak odczyt, w tym zapisy, konstruktory
+  strumieni i wywołania `*Sync`, które nigdy nie mogą mieć limitu
+* łańcuch `fsp.stat(...).catch(...)` liczy się dwa razy i jest zgłaszany dwa razy
+* awaria wykryta zwykłym predykatem trafia na ścieżkę pustki
+
+**Piątą poprawiono od razu** i to o niej warto przeczytać. Na node-red narzędzie
+wypisało `findings: 0` tam, gdzie znaczyło *nie zaglądałem* — najczystszy
+przykład tego, co te cztery reguły mają łapać, znaleziony w nim samym. Tego nie
+można było zostawić dla ochrony liczby, a poprawka nie zmienia żadnego
+zgłoszenia: dokłada zdanie o tym, czego nie przeczytano.
+
+Każdy przebieg, który cokolwiek wykluczył, mówi teraz, ile kodu źródłowego
+zostało za wykluczeniami, nazywa największe wraz ze wzorcem, który je usunął, i
+robi się głośniejszy, gdy wykluczono więcej, niż przeczytano:
+
+```
+read: 11 files, 76 functions, 14 error handlers, 19 external reads
+not read: 741 file(s) behind 12 excluded director(ies) (counted up to a cap, so at least that many), and 9 excluded file(s)
+   largest: packages/node_modules/@node-red/ (>=500, **/node_modules/**), test/unit/ (147, **/test/**)
+   More was excluded than was read. If your sources live under a path that looks
+   like a dependency or a test directory, they were skipped: read the list above
+   before taking this result for a clean one.
+```
+
+`test/resilience.mjs` trzyma to na miejscu: po usunięciu poprawki scenariusz
+*sources under an excluded directory* przechodzi w stan SILENT, co wywraca
+warstwę.
+
+Wykluczenie kodu testowego to jeszcze co innego — poprawka zakresu, prawdziwa
+przed pomiarem, a nie z niego wyprowadzona.
 
 Każdy werdykt zapadł po przeczytaniu kodu w cytowanej linii. Pełny zapis,
 z powodem przy każdym z czterdziestu, leży w `test/precision.json`.

@@ -24,7 +24,8 @@
     "noConvention": 12,
     "parseErrors": 0,
     "generated": 0,
-    "unreadable": 0
+    "unreadable": 0,
+    "notReadBehindExclusions": 0
   },
   "findings": [
     {

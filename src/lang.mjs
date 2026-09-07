@@ -43,6 +43,14 @@ const S = {
   'generatedSkipped': {
     en: 'Skipped {0} generated or bundled file(s): a minifier\'s output is nobody\'s convention, and it would be quoted back as a neighbour. {1}   (--include-generated reads them anyway)',
     pl: 'Pominalem {0} plikow generowanych lub zbundlowanych — wyjscie minifikatora nie jest niczyja konwencja, a zostaloby zacytowane jako sasiad: {1}   (--include-generated czyta je mimo to)' },
+  'notRead': {
+    en: 'not read: {0} file(s) behind {1} excluded director(ies){2}, and {3} excluded file(s)',
+    pl: 'nieprzeczytane: {0} plikow za {1} wykluczonymi katalogami{2} i {3} wykluczonych plikow' },
+  'notReadWorst': { en: '   largest: {0}', pl: '   najwieksze: {0}' },
+  'notReadAtLeast': { en: ' (counted up to a cap, so at least that many)', pl: ' (liczone do limitu, wiec co najmniej tyle)' },
+  'notReadLouder': {
+    en: '   More was excluded than was read. If your sources live under a path that looks\n   like a dependency or a test directory, they were skipped: read the list above\n   before taking this result for a clean one.',
+    pl: '   Wykluczono wiecej, niz przeczytano. Jesli twoje zrodla leza pod sciezka\n   wygladajaca jak zaleznosc albo katalog testowy, zostaly pominiete: przeczytaj\n   liste wyzej, zanim uznasz ten wynik za czysty.' },
   'mutedByComment': { en: 'muted by comment: {0}', pl: 'wyciszone komentarzem: {0}' },
   'mutedByConfig': { en: 'muted by config file: {0}', pl: 'wyciszone plikiem konfiguracyjnym: {0}' },
   'diffVsPrevious': {

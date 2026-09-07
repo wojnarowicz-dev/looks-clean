@@ -14,7 +14,7 @@ import path from 'node:path';
 import { t } from './lang.mjs';
 import { makeFlag, hasFlag, valueOf } from './args.mjs';
 import { reportNonUtf8, reportUnreadable, unreadableFiles } from './input.mjs';
-import { collectFiles, readProject } from './collect.mjs';
+import { collectFiles, readProject, notReadSummary } from './collect.mjs';
 import { noSourcesIn, noPopulation } from './population.mjs';
 import { prepare, diffHeader, resultExit } from './snapshot.mjs';
 import { score } from './rank.mjs';
@@ -115,6 +115,7 @@ const w = prepare(argv, {
     parseErrors: ir.parseErrors.length,
     generated: ir.generated.length,
     unreadable: unreadableFiles().length,
+    notReadBehindExclusions: (notReadSummary(files) || { behind: 0 }).behind,
   },
   findings,
 });
@@ -124,6 +125,21 @@ console.log(t('scanTitle'));
 console.log(t('root') + ROOT);
 console.log(t('scanStats', ir.filesRead, ir.functions.length, ir.handlers.length, ir.reads.length));
 console.log(t('scanRules', selected.map(r => r.id).join(', '), LAYER, MINPOP));
+// WHAT WAS NOT READ, ON EVERY RUN THAT EXCLUDED ANYTHING.
+//
+// Printed unconditionally rather than above some threshold, because a
+// threshold would be a number from thin air and this line is one line. The
+// louder sentence below has no threshold either: it fires when more source was
+// excluded than read, which is a comparison between two measured quantities and
+// not an opinion about either.
+{
+  const nr = notReadSummary(files, ir.rel);
+  if (nr) {
+    console.log(t('notRead', nr.behind, nr.dirs, nr.capped ? t('notReadAtLeast') : '', nr.files));
+    if (nr.worst.length) console.log(t('notReadWorst', nr.worst.join(', ')));
+    if (nr.behind > ir.filesRead) console.log(t('notReadLouder'));
+  }
+}
 console.log(t('settings') + cfg.describe());
 console.log(t('scanFindings', w.snap.findings.length, w.diff && !w.showAll ? t('onlyNewShown') : ''));
 console.log(t('scanPerRule', RULE_IDS.filter(id => perRule.has(id))

@@ -20,7 +20,60 @@ import { analyse } from './ir.mjs';
 const SCRIPT_EXT = /\.(js|mjs|cjs|jsx|ts|mts|cts|tsx)$/i;
 const HTML_EXT = /\.html?$/i;
 
-export function collectFiles(dir, cfg, acc = { script: [], html: [] }) {
+// HOW MUCH WAS NOT READ, AND UNDER WHICH RULE.
+//
+// This exists because of one measured failure. Pointed at node-red, the tool
+// read 11 files of a repository holding 308 JavaScript sources and printed
+// `findings: 0`. node-red keeps its source under `packages/node_modules/`, and
+// the built-in `**/node_modules/**` exclusion removed the whole project — in
+// silence. That is `findings: 0` meaning "I did not look", which is the exact
+// defect this tool reports in other people's code, committed by this tool.
+//
+// A count of skipped DIRECTORIES would not have carried the signal: every
+// project skips node_modules, so "1 directory excluded" is the same line on a
+// healthy run and on that one. What distinguishes them is how much source was
+// behind the exclusion, so the files are counted.
+//
+// THE COUNT IS BOUNDED. Walking a real node_modules to the last file would cost
+// more than the analysis. Each excluded directory is walked until CAP source
+// files have been seen and then reported as "at least CAP" — which is honest,
+// cheap, and enough: the reader needs to know the order of magnitude of what
+// was not looked at, not its exact size.
+const NOT_READ_CAP = 500;
+
+// A COUNT THAT COULD NOT BE COMPLETED SAYS SO, and this project's own
+// self-check is why. The first version of this function swallowed the failure to
+// list a subdirectory — `catch { continue; }`, with a comment arguing that the
+// directory was excluded anyway. Rule 1 reported it against the four neighbours
+// in this file that do better, and it was right: a number whose whole job is to
+// say how much was NOT read must not quietly undercount when part of it could
+// not be counted. Both a hit budget and a failed listing make the answer a floor
+// rather than a total, and the report prints ">=" for either.
+function countSourcesUnder(dir, budget) {
+  let n = 0;
+  let partial = false;
+  const stack = [dir];
+  while (stack.length && n < budget) {
+    const next = stack.pop();
+    let entries;
+    try {
+      entries = fs.readdirSync(next, { withFileTypes: true });
+      // looks-clean: ok — `partial` IS the record: the caller prints it as ">=", so the number says it is a floor
+    } catch {
+      partial = true;
+      continue;
+    }
+    for (const e of entries) {
+      if (n >= budget) break;
+      if (e.isDirectory()) stack.push(path.join(e.parentPath || e.path || next, e.name));
+      else if (SCRIPT_EXT.test(e.name) || HTML_EXT.test(e.name)) n++;
+    }
+  }
+  return { files: n, partial: partial || n >= budget };
+}
+
+export function collectFiles(dir, cfg, acc = null) {
+  if (!acc) acc = { script: [], html: [], excludedDirs: [], excludedFiles: 0, unreadableDirs: [] };
   let entries;
   try {
     entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -28,19 +81,51 @@ export function collectFiles(dir, cfg, acc = { script: [], html: [] }) {
     // A directory that cannot be listed is not silently skipped: everything
     // under it drops out of every population, and a smaller population produces
     // fewer findings, which reads as cleaner code.
-    acc.unreadableDirs = acc.unreadableDirs || [];
     acc.unreadableDirs.push({ dir, code: e.code || e.message });
     return acc;
   }
   for (const e of entries) {
     const p = path.join(dir, e.name);
-    if (cfg.isExcluded(p)) continue;
+    const pattern = cfg.excludedBy(p);
+    if (pattern) {
+      if (e.isDirectory()) {
+        const counted = countSourcesUnder(p, NOT_READ_CAP);
+        acc.excludedDirs.push({ dir: p, pattern, files: counted.files, capped: counted.partial });
+      } else if (SCRIPT_EXT.test(e.name) || HTML_EXT.test(e.name)) {
+        acc.excludedFiles++;
+      }
+      continue;
+    }
     if (e.isDirectory()) { collectFiles(p, cfg, acc); continue; }
     if (!e.isFile()) continue;
     if (HTML_EXT.test(e.name)) acc.html.push(p);
     else if (SCRIPT_EXT.test(e.name)) acc.script.push(p);
   }
   return acc;
+}
+
+/**
+ * The one sentence about what was not read, or null.
+ *
+ * It is printed on EVERY run that excluded something, not only on suspicious
+ * ones. A threshold ("warn when more was skipped than read") would be a number
+ * from thin air, and the line is cheap: a reader who can see that 308 files sat
+ * behind one exclusion does not need the tool to have an opinion about it.
+ */
+export function notReadSummary(files, rel = (p => p)) {
+  const dirs = files.excludedDirs || [];
+  const behind = dirs.reduce((a, d) => a + d.files, 0);
+  if (!dirs.length && !files.excludedFiles) return null;
+  const worst = [...dirs].sort((a, b) => b.files - a.files).slice(0, 3)
+    .filter(d => d.files > 0)
+    .map(d => rel(d.dir) + '/ (' + (d.capped ? '>=' : '') + d.files + ', ' + d.pattern + ')');
+  return {
+    dirs: dirs.length,
+    files: files.excludedFiles,
+    behind,
+    capped: dirs.some(d => d.capped),
+    worst,
+  };
 }
 
 // GENERATED AND BUNDLED FILES ARE NOT PART OF ANYBODY'S CONVENTION.

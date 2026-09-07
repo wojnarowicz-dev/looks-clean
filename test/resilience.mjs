@@ -95,6 +95,31 @@ scenario('nothing to compare against', 'sites read, no peer group big enough',
   },
   ['not one peer group', 'NOT a clean bill of health']);
 
+// THE ONE A MEASUREMENT FOUND, AND THE WORST THIS TOOL HAS HAD.
+//
+// Pointed at node-red, the tool read 11 files of a repository holding 308
+// JavaScript sources and printed `findings: 0`. node-red keeps its source under
+// `packages/node_modules/`, and the built-in `**/node_modules/**` exclusion
+// removed the entire project without a word. `findings: 0` meaning "I did not
+// look" is exactly the defect these four rules report in other people's code.
+//
+// The fixture reproduces the layout rather than the project: a handful of files
+// at the top, and the real code one directory down under a name the exclusions
+// eat.
+scenario('sources under an excluded directory', 'the whole project is behind an exclusion',
+  () => {
+    const d = dir('hidden-sources');
+    fs.writeFileSync(path.join(d, 'index.js'), 'module.exports = require("./packages/node_modules/app");\n');
+    const inner = path.join(d, 'packages', 'node_modules', 'app');
+    fs.mkdirSync(inner, { recursive: true });
+    const src = fs.readFileSync(path.join(HERE, 'fixtures', 'project', 'api.js'), 'utf8');
+    for (const n of ['api.js', 'net.js', 'store.js', 'disk.js'])
+      fs.copyFileSync(path.join(HERE, 'fixtures', 'project', n), path.join(inner, n));
+    void src;
+    return ['scan', d];
+  },
+  ['not read:', 'More was excluded than was read', 'node_modules']);
+
 scenario('binary junk in a .js file', 'one source file is not source at all',
   () => {
     const d = copyFixture('project', dir('junk'));

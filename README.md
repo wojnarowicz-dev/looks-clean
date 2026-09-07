@@ -19,7 +19,7 @@ It does not have opinions. It has neighbours.
 <!-- lc:claim name=knownAnswersInScope value=5 -->
 <!-- lc:claim name=families value=8 -->
 <!-- lc:claim name=languages value=2 -->
-<!-- lc:claim name=messages value=135 -->
+<!-- lc:claim name=messages value=139 -->
 <!-- lc:claim name=fixtureFindings value=7 -->
 <!-- lc:claim name=fixturePlanted value=4 -->
 <!-- lc:claim name=cleanFindings value=0 -->
@@ -141,16 +141,40 @@ is very often just outside both.
 
 ### Defects the measurements found in the tool
 
-Five, none fixed: `{ timeout }` written as a shorthand property is not recognised
-as a deadline; every `fs.*` call is treated as a read, including writes, stream
-constructors and `*Sync` calls that can never carry a deadline; a chained
-`fsp.stat(...).catch(...)` is counted twice and reported twice; a failure caught
-by a plain predicate is filed as the empty path; and a project whose source sits
-under an excluded directory gets a silent zero.
+Five. **Four are unfixed on purpose**, because each of them changes *which*
+findings come out, and fixing those then re-measuring on the same projects would
+be tuning the tool to its own test — which is how a precision number becomes
+worthless:
 
-They stay unfixed on purpose. Fixing them and re-measuring on the same projects
-would be tuning the tool to its own test, which is how a precision number becomes
-worthless. Excluding test code was a different thing — a scope correction, true
+* `{ timeout }` written as a shorthand property is not recognised as a deadline
+* every `fs.*` call is treated as a read, including writes, stream constructors
+  and `*Sync` calls that can never carry a deadline
+* a chained `fsp.stat(...).catch(...)` is counted twice and reported twice
+* a failure caught by a plain predicate is filed as the empty path
+
+**The fifth was fixed immediately**, and it is the one worth reading about. On
+node-red the tool printed `findings: 0` where it meant *I did not look* — the
+cleanest example of what these four rules exist to catch, found in the tool
+itself. That could not be left standing to protect a number, and fixing it
+changes no finding: it adds a sentence about what was never read.
+
+Every run that excludes anything now says how much source sat behind the
+exclusions, names the largest with the pattern that removed it, and gets louder
+when more was excluded than read:
+
+```
+read: 11 files, 76 functions, 14 error handlers, 19 external reads
+not read: 741 file(s) behind 12 excluded director(ies) (counted up to a cap, so at least that many), and 9 excluded file(s)
+   largest: packages/node_modules/@node-red/ (>=500, **/node_modules/**), test/unit/ (147, **/test/**)
+   More was excluded than was read. If your sources live under a path that looks
+   like a dependency or a test directory, they were skipped: read the list above
+   before taking this result for a clean one.
+```
+
+`test/resilience.mjs` holds it in place: remove the fix and the scenario
+*sources under an excluded directory* goes SILENT, which fails the layer.
+
+Excluding test code was a third kind of thing again — a scope correction, true
 before the measurement and not derived from it.
 
 Every verdict was reached by reading the code at the cited line. The full record,

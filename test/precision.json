@@ -1,10 +1,12 @@
 {
   "_what": "Precision measurements of looks-clean on foreign projects. Every verdict was reached by reading the code at the cited line. This file is data, not a test: test/readme.mjs checks that the README quotes it correctly and that each measurement adds up.",
   "_method": [
-    "Three projects picked before the tool was run, by one stated criterion: density of error handling, because three of the four rules need a population.",
-    "Shallow clone, default settings, no config file, no exclusions beyond the built-in thirteen.",
-    "The FIRST TEN findings of each run, in the order the tool printed them, were read in the source and judged.",
-    "Ten checked out of N reported is ten checked. It is not the precision of the tool over the whole run, and nothing here claims that it is."
+    "Projects are picked BEFORE the tool is run, on one stated criterion, and none of them is the author’s own.",
+    "THE CRITERION IS DENSITY OF EXTERNAL READS, not density of error handling. Rules 2 and 3 group handlers and reads by the family of external operation, so a codebase full of try/catch around its own arithmetic gives them nothing to compare. Measured: fastify has 113 error handlers and 8 external reads, and reported nothing at all. Count the reads first.",
+    "Shallow clone, default settings, no config file, no exclusions beyond the built-in list.",
+    "The FIRST TEN findings of each run, in the order the tool printed them, are read in the source and judged.",
+    "Ten checked out of N reported is ten checked. It is not the precision of the tool over the whole run, and nothing here claims that it is.",
+    "A project that reports nothing is a result and is recorded with the reason. A zero for a reason that is not about precision — the wrong shape of project, or a defect in the tool — says so."
   ],
   "_twoNumbers": "Two measurements from two runs are kept side by side rather than one number corrected. The tool changed between them — test directories are now excluded by default — and so did the material. A single revised figure would hide both facts.",
   "toolVersion": "0.1.0",
@@ -607,7 +609,17 @@
           "note": "The failure is the branch condition, not an error."
         }
       },
-      "commonFactor": "Five of the eight false alarms record the failure somewhere the tool does not read: a console.warn four lines below the handler, an undefined check, a stream error event, or the fall-through itself. That is the first measurement common factor sharpened — the tool reads the handler body and its return value, and in real code the record of a failure is very often just outside both."
+      "commonFactor": "Five of the eight false alarms record the failure somewhere the tool does not read: a console.warn four lines below the handler, an undefined check, a stream error event, or the fall-through itself. That is the first measurement common factor sharpened — the tool reads the handler body and its return value, and in real code the record of a failure is very often just outside both.",
+      "fixedAfterwards": [
+        {
+          "defect": "a project whose source sits under an excluded directory gets a silent zero",
+          "foundOn": "node-red",
+          "fixed": true,
+          "how": "Every run that excluded anything now reports how many source files sat behind the exclusions, names the three largest with the pattern that removed them, and adds a louder sentence when more source was excluded than read. On node-red the run now says: 741 files behind 12 excluded directories, largest packages/node_modules/@node-red/ (>=500, **/node_modules/**).",
+          "whyThisOneAndNotTheOthers": "The other four defects change WHICH findings come out, so fixing them and re-measuring on the same material would be tuning to the test. This one changes no finding at all — it adds a sentence about what was not read — and it is the tool committing its own subject, which cannot be left standing to protect a number.",
+          "guardedBy": "test/resilience.mjs, scenario \"sources under an excluded directory\". Removing the fix turns that scenario SILENT, which fails the layer."
+        }
+      ]
     }
   ]
 }
