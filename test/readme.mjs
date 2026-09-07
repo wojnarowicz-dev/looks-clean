@@ -225,6 +225,27 @@ for (const [file, lang] of PAGES) {
     absent.length ? 'not on the page: ' + absent.join(', ') : wanted.length + ' headings');
 }
 
+// ---------------------------------------------------------------- 6. the licence
+//
+// THREE PLACES SAY WHAT THE LICENCE IS — the LICENSE file, package.json, and a
+// line at the bottom of each page — and there is nothing to stop them drifting
+// apart. Two of them agreeing while the third says something else is the worst
+// case, because whichever one the reader happens to open, they get an answer
+// that looks authoritative.
+{
+  const licence = fs.readFileSync(path.join(ROOT, 'LICENSE'), 'utf8');
+  const AUTHOR = 'Aleksander Wojnarowicz';
+  check('LICENSE is MIT and names the author',
+    /^MIT License/m.test(licence) && licence.includes(AUTHOR),
+    licence.split('\n')[0]);
+  check('package.json says the same licence and author',
+    pkg.license === 'MIT' && pkg.author === AUTHOR,
+    pkg.license + ' / ' + pkg.author);
+  for (const [file] of PAGES)
+    check(file + ' says the same licence and author',
+      /\bMIT\b/.test(text[file]) && text[file].includes(AUTHOR), '');
+}
+
 console.log('\n  ' + (failed ? failed + ' failed' : 'both pages agree with the tool'));
 if (failed) {
   console.log('\n  The code is the fact and the README is the claim. Fix the claim, or fix');
