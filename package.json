@@ -8,6 +8,14 @@
   "bin": {
     "looks-clean": "bin/looks-clean.mjs"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wojnarowicz-dev/looks-clean.git"
+  },
+  "homepage": "https://github.com/wojnarowicz-dev/looks-clean#readme",
+  "bugs": {
+    "url": "https://github.com/wojnarowicz-dev/looks-clean/issues"
+  },
   "files": [
     "bin",
     "src",

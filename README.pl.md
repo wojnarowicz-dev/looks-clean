@@ -129,7 +129,9 @@ i naprawdę robi to, co zgłoszenie o niej mówi.
 Node 18 albo nowszy.
 
 ```
-git clone <to repo> && cd looks-clean && npm install
+git clone https://github.com/wojnarowicz-dev/looks-clean.git
+cd looks-clean
+npm install
 ```
 
     $ looks-clean scan <dir> --json .looks-clean/run.json

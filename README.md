@@ -130,7 +130,9 @@ what the finding says it does.
 Node 18 or newer.
 
 ```
-git clone <this repo> && cd looks-clean && npm install
+git clone https://github.com/wojnarowicz-dev/looks-clean.git
+cd looks-clean
+npm install
 ```
 
     $ looks-clean scan <dir> --json .looks-clean/run.json
