@@ -24,6 +24,12 @@ Nie ma poglądów. Ma sąsiadów.
 <!-- lc:claim name=fixturePlanted value=4 -->
 <!-- lc:claim name=cleanFindings value=0 -->
 <!-- lc:claim name=defaultExclusions value=13 -->
+<!-- lc:claim name=precisionProjects value=3 -->
+<!-- lc:claim name=precisionReported value=409 -->
+<!-- lc:claim name=precisionChecked value=30 -->
+<!-- lc:claim name=precisionReal value=2 -->
+<!-- lc:claim name=precisionNoise value=28 -->
+<!-- lc:claim name=precisionTestCode value=12 -->
 
 ## Czym to się różni od twojego lintera
 
@@ -60,6 +66,47 @@ Konkretnie, na tym samym kodzie:
 Dwa pogrubione wiersze to te, które czynią z tego narzędzie użyteczne. Coś, co
 zgłaszałoby każdy goły `catch { return [] }`, byłoby linterem z gorszymi
 regułami.
+
+## Jak często się myli
+
+**2 prawdziwe defekty i 28 fałszywych alarmów na 30 sprawdzonych zgłoszeń.**
+Te 30 to pierwsza dziesiątka z każdego z trzech projektów, których wcześniej nie
+czytałem, a które łącznie zgłosiły 409. Dziesięć sprawdzonych z 359 to dziesięć
+sprawdzonych — to nie jest trafność narzędzia na całym przebiegu i nic tutaj
+tego nie twierdzi.
+
+| projekt | charakter | zgłoszeń | sprawdzonych | trafnych | fałszywych |
+|---|---|---:|---:|---:|---:|
+| [got](https://github.com/sindresorhus/got) | biblioteka klienta HTTP, TypeScript | 359 | 10 | 0 | 10 |
+| [uptime-kuma](https://github.com/louislam/uptime-kuma) | aplikacja monitorująca, JavaScript | 34 | 10 | 2 | 8 |
+| [eslint](https://github.com/eslint/eslint) | narzędzie deweloperskie, JavaScript | 16 | 10 | 0 | 10 |
+
+Trójkę wybrano przed uruchomieniem narzędzia, według jednego ogłoszonego
+kryterium — gęstości obsługi błędów, bo trzy z czterech reguł potrzebują
+populacji — i żaden z nich nie jest mój. Każdy werdykt zapadł po przeczytaniu
+kodu w cytowanej linii. Pełny zapis, z powodem przy każdym z trzydziestu, leży
+w `test/precision.json`.
+
+**Co łączy fałszywe alarmy.** W 20 z 28 awaria *jest* obsłużona — limitem czasu
+na wywołaniu obejmującym, odpowiedzią HTTP 400, kompensującym `destroy()`,
+udokumentowanym zapasowym torem albo testem, którego całym tematem jest brak
+limitu. Narzędzie ocenia obsługę po kształcie jej własnego ciała i po wartości,
+którą zwraca, a żadna z tych dwóch rzeczy nie pokazuje, dokąd awaria naprawdę
+poszła.
+
+Największa pojedyncza dźwignia jest prostsza: **12 z 30 to kod testowy**, a 350
+z 359 zgłoszeń w `got` leży pod `test/`. Plik testowy nie jest warstwą — jego
+kształt dyktuje to, co dany test sprawdza, a nie wspólna decyzja inżynierska — a
+katalogów testowych nie ma dziś we wbudowanych wykluczeniach.
+
+Pomiar znalazł też cztery usterki w samym narzędziu, żadna jeszcze
+niepoprawiona: `{ timeout }` zapisany skrótowo nie jest rozpoznawany jako limit;
+`fsp.stat(...).catch(...)` liczy się jako dwa odczyty i jest zgłaszany dwa razy;
+wywołanie `*Sync` nigdy nie może mieć limitu, więc zawsze wypada jako odstające;
+a awaria wykryta zwykłym predykatem trafia na ścieżkę pustki. Zostają
+niepoprawione celowo — poprawienie ich i ponowny pomiar na tych samych trzech
+projektach byłby strojeniem narzędzia pod własny test, a tak właśnie liczba
+trafności staje się bezwartościowa.
 
 ## Czego NIE robi
 

@@ -88,7 +88,62 @@ const outOfScope = (answersSource.match(/^\s{4}state: 'SKIP',$/gm) || []).length
 const plantedSource = fs.readFileSync(path.join(HERE, 'golden.mjs'), 'utf8');
 const plantedCount = (plantedSource.match(/\{ rule: '[a-z-]+', file:/g) || []).length;
 
+// THE PRECISION MEASUREMENT IS DATA, NOT A RUN.
+//
+// The verdicts in test/precision.json were reached by reading code; nothing here
+// can re-derive them, and a gate that pretended to would be worse than none. So
+// two things are checked instead, and both are the kind of thing that rots:
+// that the page quotes the file, and that the file adds up. A record whose
+// totals do not match its own rows is a measurement nobody can trust, however
+// carefully the individual judgements were made.
+const precision = JSON.parse(fs.readFileSync(path.join(HERE, 'precision.json'), 'utf8'));
+{
+  const rows = precision.findings;
+  const real = rows.filter(r => r.verdict === 'real').length;
+  const noise = rows.filter(r => r.verdict === 'noise').length;
+  check('the measurement has a row per checked finding',
+    rows.length === precision.checked, rows.length + ' rows, ' + precision.checked + ' declared');
+  check('its verdicts add up', real === precision.real && noise === precision.noise &&
+    real + noise === precision.checked,
+    real + ' real + ' + noise + ' noise = ' + (real + noise));
+
+  // Every false alarm names a cause, and the cause tally matches the rows. A
+  // cause is the useful half of a precision number: the count says how often,
+  // the cause says what to do about it.
+  const uncaused = rows.filter(r => r.verdict === 'noise' && !r.cause);
+  check('every false alarm names a cause', uncaused.length === 0,
+    uncaused.length ? uncaused[0].site : noise + ' causes given');
+  const tally = {};
+  for (const r of rows) if (r.cause) tally[r.cause] = (tally[r.cause] || 0) + 1;
+  const wrongTally = Object.keys(precision.causes)
+    .filter(k => precision.causes[k].count !== (tally[k] || 0));
+  const undeclared = Object.keys(tally).filter(k => !(k in precision.causes));
+  check('the cause tally matches the rows',
+    wrongTally.length === 0 && undeclared.length === 0,
+    wrongTally.length ? wrongTally.map(k => k + ': ' + precision.causes[k].count + ' vs ' + tally[k]).join(', ')
+      : undeclared.length ? 'undeclared: ' + undeclared.join(', ')
+        : Object.keys(tally).length + ' causes');
+
+  // The per-project rows must add up to the totals, and no project may claim to
+  // have checked more findings than it reported.
+  const sum = (k) => precision.projects.reduce((a, p) => a + p[k], 0);
+  check('the per-project rows add up',
+    sum('checked') === precision.checked && sum('real') === precision.real &&
+    sum('noise') === precision.noise &&
+    precision.projects.reduce((a, p) => a + p.counts.findings, 0) === precision.reportedInTotal,
+    sum('checked') + ' checked, ' + precision.reportedInTotal + ' reported');
+  const overClaimed = precision.projects.filter(p => p.checked > p.counts.findings);
+  check('nothing claims more checked than reported', overClaimed.length === 0,
+    overClaimed.length ? overClaimed[0].name : precision.projects.length + ' projects');
+}
+
 const TRUTH = {
+  precisionProjects: precision.projects.length,
+  precisionReported: precision.reportedInTotal,
+  precisionChecked: precision.checked,
+  precisionReal: precision.real,
+  precisionNoise: precision.noise,
+  precisionTestCode: precision.excludingTestsWouldRemove.ofTheThirtyChecked,
   rules: RULE_IDS.length,
   rulesNeedingPopulation: Object.values(NEEDS_POPULATION).filter(Boolean).length,
   layers: layerCount,

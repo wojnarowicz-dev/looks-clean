@@ -1,0 +1,417 @@
+{
+  "_what": "A precision measurement of looks-clean on three foreign projects. Every verdict below was reached by reading the code at the cited line. This file is data, not a test: test/readme.mjs checks that the README quotes it correctly and that it adds up.",
+  "_method": [
+    "Three projects picked before the tool was run, by one stated criterion: density of error handling, because three of the four rules need a population.",
+    "Shallow clone, default settings, no config file, no exclusions beyond the built-in thirteen.",
+    "The FIRST TEN findings of each run, in the order the tool printed them, were read in the source and judged.",
+    "Ten checked out of N reported is ten checked. It is not the precision of the tool over the whole run, and nothing here claims that it is."
+  ],
+  "measuredOn": "2026-09-07",
+  "toolVersion": "0.1.0",
+  "checked": 30,
+  "real": 2,
+  "noise": 28,
+  "reportedInTotal": 409,
+  "projects": [
+    {
+      "name": "got",
+      "repo": "sindresorhus/got",
+      "revision": "687eb7dcc100ea3e548ebba227173b886789e670",
+      "character": "HTTP client library, TypeScript",
+      "whyChosen": "Rule 3 needs a population of reads that MIXES guarded and unguarded. An HTTP client is where deadlines live, so if the rule works anywhere it should work here.",
+      "counts": {
+        "files": 85,
+        "functions": 4431,
+        "handlers": 158,
+        "reads": 1059,
+        "findings": 359
+      },
+      "perRule": {
+        "no-timeout": 342,
+        "swallowed": 17
+      },
+      "checked": 10,
+      "real": 0,
+      "noise": 10,
+      "note": "350 of the 359 findings are under test/. All ten checked were test code."
+    },
+    {
+      "name": "uptime-kuma",
+      "repo": "louislam/uptime-kuma",
+      "revision": "d4fb7f38d77c09e266a859178940c0b9d88d0594",
+      "character": "monitoring application, JavaScript",
+      "whyChosen": "An application rather than a library: network and database reads in the same files, ninety-odd notification providers written to one shape, which is the densest population of comparable error handlers I could find.",
+      "counts": {
+        "files": 368,
+        "functions": 2826,
+        "handlers": 461,
+        "reads": 702,
+        "findings": 34
+      },
+      "perRule": {
+        "swallowed": 30,
+        "default-on-error": 3,
+        "no-timeout": 1
+      },
+      "checked": 10,
+      "real": 2,
+      "noise": 8
+    },
+    {
+      "name": "eslint",
+      "repo": "eslint/eslint",
+      "revision": "c8326608e710e670beaf982501aed80ea104919a",
+      "character": "developer tool, JavaScript",
+      "whyChosen": "File-system heavy, and it is the tool this project defines itself against. If looks-clean produces nonsense on eslint's own source, that is worth knowing and worth printing.",
+      "counts": {
+        "files": 753,
+        "functions": 7953,
+        "handlers": 219,
+        "reads": 150,
+        "findings": 16
+      },
+      "perRule": {
+        "swallowed": 10,
+        "no-timeout": 5,
+        "same-answer": 1
+      },
+      "checked": 10,
+      "real": 0,
+      "noise": 10
+    }
+  ],
+  "findings": [
+    {
+      "project": "got",
+      "rank": 1,
+      "rule": "no-timeout",
+      "site": "test/abort.ts:508",
+      "verdict": "noise",
+      "cause": "test-layer",
+      "why": "A priming request inside a cache test. The test file is treated as a layer, but a test file's shape is dictated by what each test is testing."
+    },
+    {
+      "project": "got",
+      "rank": 2,
+      "rule": "no-timeout",
+      "site": "test/timeout.ts:148",
+      "verdict": "noise",
+      "cause": "test-layer",
+      "why": "got('prime') warms a keep-alive agent before the timeout under test. A deadline here would break the test."
+    },
+    {
+      "project": "got",
+      "rank": 3,
+      "rule": "no-timeout",
+      "site": "test/timeout.ts:202",
+      "verdict": "noise",
+      "cause": "test-layer",
+      "why": "The test asserts that a slow upload does not trip the response timeout. Having no request deadline is the subject of the test."
+    },
+    {
+      "project": "got",
+      "rank": 4,
+      "rule": "no-timeout",
+      "site": "test/timeout.ts:229",
+      "verdict": "noise",
+      "cause": "test-layer",
+      "why": "Priming request again, same shape as rank 2."
+    },
+    {
+      "project": "got",
+      "rank": 5,
+      "rule": "no-timeout",
+      "site": "test/timeout.ts:394",
+      "verdict": "noise",
+      "cause": "test-layer",
+      "why": "Priming request again."
+    },
+    {
+      "project": "got",
+      "rank": 6,
+      "rule": "no-timeout",
+      "site": "test/timeout.ts:495",
+      "verdict": "noise",
+      "cause": "deadline-one-frame-out",
+      "why": "http.request inside a request hook whose enclosing got() call carries timeout: {request: 100}. The deadline is on the caller and the rule reads the statement."
+    },
+    {
+      "project": "got",
+      "rank": 7,
+      "rule": "no-timeout",
+      "site": "test/timeout.ts:1046",
+      "verdict": "noise",
+      "cause": "test-layer",
+      "why": "An HTTP/2 negotiation test. No deadline is intended."
+    },
+    {
+      "project": "got",
+      "rank": 8,
+      "rule": "no-timeout",
+      "site": "test/timeout.ts:1312",
+      "verdict": "noise",
+      "cause": "deadline-one-frame-out",
+      "why": "Same shape as rank 6: the enclosing call sets timeout: {request: timeout}."
+    },
+    {
+      "project": "got",
+      "rank": 9,
+      "rule": "no-timeout",
+      "site": "test/timeout.ts:1390",
+      "verdict": "noise",
+      "cause": "deadline-one-frame-out",
+      "why": "Same shape as rank 6."
+    },
+    {
+      "project": "got",
+      "rank": 10,
+      "rule": "no-timeout",
+      "site": "test/timeout.ts:1579",
+      "verdict": "noise",
+      "cause": "deadline-one-frame-out",
+      "why": "http.request inside a retry hook; the enclosing call governs the deadline."
+    },
+    {
+      "project": "uptime-kuma",
+      "rank": 1,
+      "rule": "default-on-error",
+      "site": "server/model/monitor.js:928",
+      "verdict": "noise",
+      "cause": "answer-is-bookkeeping",
+      "why": "The reported 'answer' is `retries = 0`, a loop counter reset inside a long monitor-beat catch. No caller ever receives it, and the family was attributed from some read elsewhere in the same try block."
+    },
+    {
+      "project": "uptime-kuma",
+      "rank": 2,
+      "rule": "swallowed",
+      "site": "server/model/monitor.js:1287",
+      "verdict": "real",
+      "cause": null,
+      "why": "`} catch (e) {}` around the TLS certificate comparison. A failure there is discarded whole, and the result is a certificate change that looks like no change. Eleven of the twelve handlers in the file do better. eslint no-empty would also find it."
+    },
+    {
+      "project": "uptime-kuma",
+      "rank": 3,
+      "rule": "swallowed",
+      "site": "server/notification-providers/discord.js:33",
+      "verdict": "noise",
+      "cause": "deliberate-cosmetic-default",
+      "why": "`catch (e) { webhookHasAvatar = true; }` with a comment saying why. The failure is absorbed on purpose and the consequence is an avatar. The tool has no notion of what the value is used for."
+    },
+    {
+      "project": "uptime-kuma",
+      "rank": 4,
+      "rule": "swallowed",
+      "site": "server/notification-providers/fluxer.js:24",
+      "verdict": "noise",
+      "cause": "deliberate-cosmetic-default",
+      "why": "A copy of rank 3 in a second provider. Duplicated code produces duplicated findings."
+    },
+    {
+      "project": "uptime-kuma",
+      "rank": 5,
+      "rule": "swallowed",
+      "site": "server/monitor-types/mysql.js:85",
+      "verdict": "noise",
+      "cause": "compensating-action",
+      "why": "`try { connection.end(); } catch (_) { connection.destroy(); }`. The handler acts on the failure — it escalates the close — but acting is not on the tool's list of traces, which is logging, rethrowing, using the binding, or a tagged answer."
+    },
+    {
+      "project": "uptime-kuma",
+      "rank": 6,
+      "rule": "swallowed",
+      "site": "server/monitor-types/mysql.js:124",
+      "verdict": "noise",
+      "cause": "compensating-action",
+      "why": "The same cleanup in a second function of the same file."
+    },
+    {
+      "project": "uptime-kuma",
+      "rank": 7,
+      "rule": "no-timeout",
+      "site": "server/monitor-types/sip-options.js:31",
+      "verdict": "noise",
+      "cause": "tool-bug-shorthand-timeout",
+      "why": "`execFile(..., { timeout })` — the deadline is there, written as an ES6 shorthand property. The deadline table looks for `timeout:` with a colon and misses `{ timeout }`. A defect in the tool, not in the code."
+    },
+    {
+      "project": "uptime-kuma",
+      "rank": 8,
+      "rule": "default-on-error",
+      "site": "server/monitor-types/websocket-upgrade.js:71",
+      "verdict": "real",
+      "cause": null,
+      "why": "Malformed custom headers become `{}`, which is also what no headers looks like. The monitor then runs with the wrong request and reports UP. The two neighbouring JSON.parse handlers in the same directory rethrow."
+    },
+    {
+      "project": "uptime-kuma",
+      "rank": 9,
+      "rule": "default-on-error",
+      "site": "server/setup-database.js:269",
+      "verdict": "noise",
+      "cause": "answer-through-a-side-channel",
+      "why": "The handler sends `response.status(400).json(...)` and then returns bare. Rule 2 reads the return value and sees `undefined`; the caller here is an HTTP client that was told exactly what happened."
+    },
+    {
+      "project": "uptime-kuma",
+      "rank": 10,
+      "rule": "swallowed",
+      "site": "db/knex_migrations/2025-12-29-0000-remove-line-notify.js:13",
+      "verdict": "noise",
+      "cause": "rule-1-with-no-population",
+      "why": "An empty catch with a comment saying the blobs are handled elsewhere. peers=0/0 — no neighbour comparison was made, so this is rule 1 at its weakest, which the ranking floors but does not suppress."
+    },
+    {
+      "project": "eslint",
+      "rank": 1,
+      "rule": "same-answer",
+      "site": "lib/cli.js:115",
+      "verdict": "noise",
+      "cause": "predicate-failure-read-as-empty",
+      "why": "printResults returns false on three failure paths and true on success; there is no 'found nothing' path at all. The tool counted `if (await isDirectory(filePath)) { ...; return false; }` as the empty path, because a failure detected by a plain predicate is not a catch and not an error-named branch."
+    },
+    {
+      "project": "eslint",
+      "rank": 2,
+      "rule": "swallowed",
+      "site": "bin/eslint.js:110",
+      "verdict": "noise",
+      "cause": "rule-1-with-no-population",
+      "why": "A documented fallback: if the message template will not load, the code below uses error.stack instead. peers=0/0."
+    },
+    {
+      "project": "eslint",
+      "rank": 3,
+      "rule": "swallowed",
+      "site": "docs/tools/prism-eslint-hook.js:25",
+      "verdict": "noise",
+      "cause": "rule-1-with-no-population",
+      "why": "An optional-dependency probe guarded by an isAvailable flag. The record of the failure is the flag NOT being set, which the tool cannot see."
+    },
+    {
+      "project": "eslint",
+      "rank": 4,
+      "rule": "no-timeout",
+      "site": "lib/eslint/eslint-helpers.js:572",
+      "verdict": "noise",
+      "cause": "tool-bug-chained-read-counted-twice",
+      "why": "`fsp.stat(filePath).catch(...)` is reported once as `fsp.stat.catch` and once as `fsp.stat`. The fs family matches on the receiver prefix, so every method chained onto an fs call counts as a further read — inflating the population and printing the same line twice."
+    },
+    {
+      "project": "eslint",
+      "rank": 5,
+      "rule": "no-timeout",
+      "site": "lib/eslint/eslint-helpers.js:572",
+      "verdict": "noise",
+      "cause": "tool-bug-chained-read-counted-twice",
+      "why": "The second half of rank 4: the same line, the same read."
+    },
+    {
+      "project": "eslint",
+      "rank": 6,
+      "rule": "no-timeout",
+      "site": "lib/eslint/eslint-helpers.js:1030",
+      "verdict": "noise",
+      "cause": "tool-bug-sync-call-cannot-be-guarded",
+      "why": "`fs.lstatSync` is synchronous and cannot take a deadline in any spelling, so it can only ever be counted as deviating. The fs family does not separate sync from async."
+    },
+    {
+      "project": "eslint",
+      "rank": 7,
+      "rule": "swallowed",
+      "site": "lib/eslint/eslint.js:666",
+      "verdict": "noise",
+      "cause": "rule-1-with-no-population",
+      "why": "`try { structuredClone(options); return; } catch { /* continue */ }` — the failure is the signal to fall through to the code that finds WHICH key is uncloneable and throws a better error."
+    },
+    {
+      "project": "eslint",
+      "rank": 8,
+      "rule": "swallowed",
+      "site": "lib/rules/no-control-regex.js:53",
+      "verdict": "noise",
+      "cause": "rule-1-with-no-population",
+      "why": "A deliberate 'ignore syntax errors in RegExp' in a lint rule whose job is to survive unparseable patterns."
+    },
+    {
+      "project": "eslint",
+      "rank": 9,
+      "rule": "swallowed",
+      "site": "tests/fixtures/code-path-analysis/try--try-catch-3.js:19",
+      "verdict": "noise",
+      "cause": "test-layer",
+      "why": "A test FIXTURE: a file whose entire purpose is to be an odd shape for the parser to chew on. Reporting it is reporting the test data."
+    },
+    {
+      "project": "eslint",
+      "rank": 10,
+      "rule": "swallowed",
+      "site": "tests/fixtures/code-path-analysis/try--try-with-for-inof-1.js:12",
+      "verdict": "noise",
+      "cause": "test-layer",
+      "why": "Another parser fixture, same as rank 9."
+    }
+  ],
+  "causes": {
+    "test-layer": {
+      "count": 8,
+      "fixable": true,
+      "note": "Test files and test fixtures compared as if one engineering decision governed them."
+    },
+    "deadline-one-frame-out": {
+      "count": 4,
+      "fixable": true,
+      "note": "The deadline is set on the enclosing call and the read sits in a callback that call was handed."
+    },
+    "rule-1-with-no-population": {
+      "count": 5,
+      "fixable": false,
+      "note": "Rule 1 speaks without neighbours by design. Every one of these is a documented deliberate decision."
+    },
+    "compensating-action": {
+      "count": 2,
+      "fixable": true,
+      "note": "The handler acts on the failure instead of reporting it; acting is not on the list of traces."
+    },
+    "deliberate-cosmetic-default": {
+      "count": 2,
+      "fixable": false,
+      "note": "The tool has no notion of what the defaulted value is used for."
+    },
+    "tool-bug-chained-read-counted-twice": {
+      "count": 2,
+      "fixable": true,
+      "note": "The fs family prefix-matches the receiver."
+    },
+    "tool-bug-shorthand-timeout": {
+      "count": 1,
+      "fixable": true,
+      "note": "`{ timeout }` shorthand is not recognised as a deadline."
+    },
+    "tool-bug-sync-call-cannot-be-guarded": {
+      "count": 1,
+      "fixable": true,
+      "note": "A *Sync read can never carry a deadline and should never be a deviation."
+    },
+    "answer-is-bookkeeping": {
+      "count": 1,
+      "fixable": true,
+      "note": "A local counter assignment in a long handler was read as the handler's answer."
+    },
+    "answer-through-a-side-channel": {
+      "count": 1,
+      "fixable": true,
+      "note": "The handler answered with an HTTP 400; rule 2 reads only the return value."
+    },
+    "predicate-failure-read-as-empty": {
+      "count": 1,
+      "fixable": true,
+      "note": "A failure detected by a plain predicate is filed as the empty path."
+    }
+  },
+  "commonFactor": "In twenty of the twenty-eight false alarms the failure IS handled — a deadline on the enclosing call, an HTTP 400, a compensating destroy(), a documented fallback, or a test whose whole subject is the missing deadline. The tool judges a handler by the shape of its own body and by the value it returns, and neither of those shows where the failure actually went.",
+  "excludingTestsWouldRemove": {
+    "ofTheThirtyChecked": 12,
+    "note": "All ten of got's checked findings and both of eslint's fixture findings are test code; 350 of got's 359 findings in total are under test/. Test code is not in the built-in exclusions today."
+  }
+}

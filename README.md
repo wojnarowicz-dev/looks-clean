@@ -24,6 +24,12 @@ It does not have opinions. It has neighbours.
 <!-- lc:claim name=fixturePlanted value=4 -->
 <!-- lc:claim name=cleanFindings value=0 -->
 <!-- lc:claim name=defaultExclusions value=13 -->
+<!-- lc:claim name=precisionProjects value=3 -->
+<!-- lc:claim name=precisionReported value=409 -->
+<!-- lc:claim name=precisionChecked value=30 -->
+<!-- lc:claim name=precisionReal value=2 -->
+<!-- lc:claim name=precisionNoise value=28 -->
+<!-- lc:claim name=precisionTestCode value=12 -->
 
 ## How this differs from your linter
 
@@ -59,6 +65,46 @@ Concretely, on the same code:
 
 The two rows in bold are the ones that make it usable. A tool that reported
 every bare `catch { return [] }` would be a linter with worse rules.
+
+## How often it is wrong
+
+**2 real defects and 28 false alarms, out of 30 findings checked.** Those 30 were
+the first ten findings of each of three projects I had not read before, which
+between them reported 409. Ten checked out of 359 is ten checked — it is not the
+precision of the tool over a whole run, and nothing here claims that it is.
+
+| project | character | reported | checked | real | false |
+|---|---|---:|---:|---:|---:|
+| [got](https://github.com/sindresorhus/got) | HTTP client library, TypeScript | 359 | 10 | 0 | 10 |
+| [uptime-kuma](https://github.com/louislam/uptime-kuma) | monitoring application, JavaScript | 34 | 10 | 2 | 8 |
+| [eslint](https://github.com/eslint/eslint) | developer tool, JavaScript | 16 | 10 | 0 | 10 |
+
+The three were chosen before the tool was run, on one stated criterion — density
+of error handling, because three of the four rules need a population — and none
+of them is mine. Every verdict was reached by reading the code at the cited
+line. The full record, with a reason for each of the thirty, is in
+`test/precision.json`.
+
+**What the false alarms have in common.** In 20 of the 28 the failure *is*
+handled — by a deadline on the enclosing call, by an HTTP 400, by a compensating
+`destroy()`, by a documented fallback, or by a test whose whole subject is the
+missing deadline. The tool judges a handler by the shape of its own body and by
+the value it returns, and neither of those shows where the failure actually
+went.
+
+The largest single lever is cruder than that: **12 of the 30 were test code**,
+and 350 of got's 359 findings are under `test/`. A test file is not a layer — its
+shape is dictated by what each test is testing, not by a shared engineering
+decision — and test directories are not in the built-in exclusions today.
+
+The measurement also found four defects in the tool itself, none of them yet
+fixed: `{ timeout }` written as a shorthand property is not recognised as a
+deadline; `fsp.stat(...).catch(...)` is counted as two reads and reported twice;
+a `*Sync` call can never carry a deadline and so can only ever be counted as
+deviating; and a failure caught by a plain predicate is filed as the empty path.
+They stay unfixed here on purpose — fixing them and re-measuring on the same
+three projects would be tuning the tool to its own test, which is how a
+precision number becomes worthless.
 
 ## What it does not do
 
