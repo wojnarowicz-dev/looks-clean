@@ -1,0 +1,16 @@
+# looks-clean — line endings are decided by the repository, not by the machine.
+#
+# WHY IT MATTERS MORE HERE THAN USUALLY. The golden layer compares a recorded
+# snapshot with a fresh one field by field, fingerprints included, and a
+# fingerprint is a hash of text. A checkout that rewrites LF to CRLF changes
+# byte offsets inside the fixtures, which moves line numbers, which moves every
+# recorded expectation — and the failure would read as "the tool changed" when
+# what changed was the machine that cloned it.
+#
+# text=auto  — git decides what is text and normalises it to LF in the repo
+# eol=lf     — and writes LF on checkout, on every platform
+* text=auto eol=lf
+
+# The recordings are data the golden layer compares byte for byte. They are
+# already LF in the repository and must stay that way on every checkout.
+*.json text eol=lf
