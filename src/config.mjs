@@ -22,11 +22,36 @@ import path from 'node:path';
 import { t } from './lang.mjs';
 import { valueOf } from './args.mjs';
 
+// TEST CODE IS NOT A LAYER, AND THAT IS WHY IT IS EXCLUDED BY DEFAULT.
+//
+// This tool reports a site because its NEIGHBOURS, doing the same job at the
+// same level, do it differently. A test file has no such neighbours: the shape
+// of each test is dictated by what that test is testing. `got('prime')` has no
+// deadline because the test is about the deadline on the NEXT call; a fixture
+// under `tests/fixtures/` is malformed on purpose, because being malformed is
+// its job.
+//
+// The cost of not knowing that was measured before this line was written: of the
+// thirty findings read by hand in test/precision.json, twelve were test code,
+// and 350 of got's 359 findings were under `test/`. See "How often it is wrong"
+// in the README — the measurement that motivated this exclusion is printed there
+// beside the one taken after it.
+//
+// WHAT THIS COSTS. Two of this project's own known answers live in
+// odd-one-out's `test/` directory, and a default run no longer reaches them.
+// test/known-answers.mjs therefore pins a config that reads test code, and says
+// so. That is the honest price of the correction, recorded rather than hidden.
+//
+// The four spellings are one decision: a directory called `test`, `tests` or
+// `spec`, the `__tests__` convention, and tests co-located as `*.test.js` or
+// `*.spec.ts` beside the code they cover.
 export const DEFAULT_EXCLUDE = [
   '**/node_modules/**', '**/.git/**', '**/dist/**', '**/build/**',
   '**/out/**', '**/coverage/**', '**/.next/**', '**/.nuxt/**',
   '**/vendor/**', '**/generated/**',
   '**/*.min.js', '**/*.bundle.js', '**/*.map',
+  '**/test/**', '**/tests/**', '**/spec/**', '**/__tests__/**',
+  '**/*.test.*', '**/*.spec.*',
 ];
 
 export const CONFIG_NAME = '.looks-clean.json';

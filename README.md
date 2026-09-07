@@ -23,12 +23,17 @@ It does not have opinions. It has neighbours.
 <!-- lc:claim name=fixtureFindings value=7 -->
 <!-- lc:claim name=fixturePlanted value=4 -->
 <!-- lc:claim name=cleanFindings value=0 -->
-<!-- lc:claim name=defaultExclusions value=13 -->
+<!-- lc:claim name=defaultExclusions value=19 -->
+<!-- lc:claim name=precisionMeasurements value=2 -->
 <!-- lc:claim name=precisionProjects value=3 -->
-<!-- lc:claim name=precisionReported value=409 -->
-<!-- lc:claim name=precisionChecked value=30 -->
+<!-- lc:claim name=precisionReported value=27 -->
+<!-- lc:claim name=precisionChecked value=10 -->
 <!-- lc:claim name=precisionReal value=2 -->
-<!-- lc:claim name=precisionNoise value=28 -->
+<!-- lc:claim name=precisionNoise value=8 -->
+<!-- lc:claim name=precisionReportedBefore value=409 -->
+<!-- lc:claim name=precisionCheckedBefore value=30 -->
+<!-- lc:claim name=precisionRealBefore value=2 -->
+<!-- lc:claim name=precisionNoiseBefore value=28 -->
 <!-- lc:claim name=precisionTestCode value=12 -->
 
 ## How this differs from your linter
@@ -68,10 +73,23 @@ every bare `catch { return [] }` would be a linter with worse rules.
 
 ## How often it is wrong
 
-**2 real defects and 28 false alarms, out of 30 findings checked.** Those 30 were
-the first ten findings of each of three projects I had not read before, which
-between them reported 409. Ten checked out of 359 is ten checked — it is not the
-precision of the tool over a whole run, and nothing here claims that it is.
+Two measurements, six projects, none of them mine. They are printed side by side
+rather than as one corrected figure, because the tool changed between them and so
+did the material — and a single revised number would hide both facts.
+
+|  | first run | second run |
+|---|---|---|
+| **date** | 2026-09-07 | 2026-09-07 |
+| **tool** | before test code was excluded | after test code was excluded |
+| **real defects** | **2** | **2** |
+| **false alarms** | **28** | **8** |
+| **checked** | 30 | 10 |
+| **reported in total** | 409 | 27 |
+
+Ten checked out of 359 is ten checked. Neither number is the precision of the
+tool over a whole run, and nothing here claims otherwise.
+
+### First run — before test code was excluded
 
 | project | character | reported | checked | real | false |
 |---|---|---:|---:|---:|---:|
@@ -79,32 +97,64 @@ precision of the tool over a whole run, and nothing here claims that it is.
 | [uptime-kuma](https://github.com/louislam/uptime-kuma) | monitoring application, JavaScript | 34 | 10 | 2 | 8 |
 | [eslint](https://github.com/eslint/eslint) | developer tool, JavaScript | 16 | 10 | 0 | 10 |
 
-The three were chosen before the tool was run, on one stated criterion — density
-of error handling, because three of the four rules need a population — and none
-of them is mine. Every verdict was reached by reading the code at the cited
-line. The full record, with a reason for each of the thirty, is in
-`test/precision.json`.
-
-**What the false alarms have in common.** In 20 of the 28 the failure *is*
+**What the false alarms had in common.** In 20 of the 28 the failure *was*
 handled — by a deadline on the enclosing call, by an HTTP 400, by a compensating
-`destroy()`, by a documented fallback, or by a test whose whole subject is the
-missing deadline. The tool judges a handler by the shape of its own body and by
-the value it returns, and neither of those shows where the failure actually
-went.
+`destroy()`, by a documented fallback, or by a test whose whole subject was the
+missing deadline.
 
-The largest single lever is cruder than that: **12 of the 30 were test code**,
-and 350 of got's 359 findings are under `test/`. A test file is not a layer — its
-shape is dictated by what each test is testing, not by a shared engineering
-decision — and test directories are not in the built-in exclusions today.
+The largest single lever was cruder than that: **12 of the 30 were test code**,
+and 350 of got's 359 findings were under `test/`. A test file is not a layer —
+its shape is dictated by what each test is testing — so test directories were
+added to the built-in exclusions. That is the one change between the two runs.
 
-The measurement also found four defects in the tool itself, none of them yet
-fixed: `{ timeout }` written as a shorthand property is not recognised as a
-deadline; `fsp.stat(...).catch(...)` is counted as two reads and reported twice;
-a `*Sync` call can never carry a deadline and so can only ever be counted as
-deviating; and a failure caught by a plain predicate is filed as the empty path.
-They stay unfixed here on purpose — fixing them and re-measuring on the same
-three projects would be tuning the tool to its own test, which is how a
-precision number becomes worthless.
+### Second run — after test code was excluded
+
+| project | character | reported | checked | real | false |
+|---|---|---:|---:|---:|---:|
+| [verdaccio](https://github.com/verdaccio/verdaccio) | private npm registry server, TypeScript | 27 | 10 | 2 | 8 |
+| [node-red](https://github.com/node-red/node-red) | visual programming runtime, JavaScript | 0 | 0 | 0 | 0 |
+| [fastify](https://github.com/fastify/fastify) | web framework, JavaScript | 0 | 0 | 0 | 0 |
+
+**Two of the three reported nothing, and neither zero was about precision.**
+They are the useful part of this run.
+
+*fastify* is a legitimate zero: 113 error handlers and 8 external reads. A web
+framework **receives** calls rather than making them, so rules 2 and 3 had almost
+nothing to group — and the run said so, four sites passed over and four layers
+with no convention, rather than printing a bare zero. It also shows the selection
+criterion was blunt: what these rules need is not density of error handling but
+density of error handling **over external reads**.
+
+*node-red* is not a legitimate zero. The tool read 11 files of a repository
+holding 308 JavaScript source files, because node-red keeps its source under
+`packages/node_modules/` and the built-in `**/node_modules/**` exclusion swallowed
+all of it — **and the run did not say so.** `findings: 0` where it meant *I did
+not look*. That is this tool's own subject, in this tool, found by pointing it at
+a codebase with an unusual layout.
+
+**What the false alarms have in common now.** Five of the eight record the
+failure somewhere the tool does not read: a `console.warn` four lines below the
+handler, an `undefined` check, a stream's `error` event, or the fall-through
+itself. That is the first run's common factor sharpened — the tool reads the
+handler's body and the value it returns, and in real code the record of a failure
+is very often just outside both.
+
+### Defects the measurements found in the tool
+
+Five, none fixed: `{ timeout }` written as a shorthand property is not recognised
+as a deadline; every `fs.*` call is treated as a read, including writes, stream
+constructors and `*Sync` calls that can never carry a deadline; a chained
+`fsp.stat(...).catch(...)` is counted twice and reported twice; a failure caught
+by a plain predicate is filed as the empty path; and a project whose source sits
+under an excluded directory gets a silent zero.
+
+They stay unfixed on purpose. Fixing them and re-measuring on the same projects
+would be tuning the tool to its own test, which is how a precision number becomes
+worthless. Excluding test code was a different thing — a scope correction, true
+before the measurement and not derived from it.
+
+Every verdict was reached by reading the code at the cited line. The full record,
+with a reason for each of the forty, is in `test/precision.json`.
 
 ## What it does not do
 

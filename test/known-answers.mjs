@@ -29,6 +29,18 @@
 //     LC_WEB   a VideoAnalyzerProWeb checkout   (answer 2)
 // An absolute path would carry one machine's account name into a public
 // repository and would be wrong for everyone else anyway.
+//
+// THIS SUITE READS TEST CODE, AND A DEFAULT RUN DOES NOT. Answers 1 and 5 are
+// both in odd-one-out's own `test/known-answers.mjs`, and since the measurement
+// in test/precision.json the default exclusions skip test directories, because a
+// test file is not a layer. Every scan below therefore pins the fixture config,
+// which turns the defaults off.
+//
+// That is a real cost and it is written down rather than quietly absorbed: two
+// of the six defects this tool was built to find would not be found by somebody
+// running it with no configuration. The exclusion is still right — twelve of the
+// thirty findings read by hand were test code — but "right on balance" is not
+// "free", and a contract that hid the difference would be the wrong contract.
 import { spawnSync, execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';

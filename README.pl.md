@@ -23,12 +23,17 @@ Nie ma poglądów. Ma sąsiadów.
 <!-- lc:claim name=fixtureFindings value=7 -->
 <!-- lc:claim name=fixturePlanted value=4 -->
 <!-- lc:claim name=cleanFindings value=0 -->
-<!-- lc:claim name=defaultExclusions value=13 -->
+<!-- lc:claim name=defaultExclusions value=19 -->
+<!-- lc:claim name=precisionMeasurements value=2 -->
 <!-- lc:claim name=precisionProjects value=3 -->
-<!-- lc:claim name=precisionReported value=409 -->
-<!-- lc:claim name=precisionChecked value=30 -->
+<!-- lc:claim name=precisionReported value=27 -->
+<!-- lc:claim name=precisionChecked value=10 -->
 <!-- lc:claim name=precisionReal value=2 -->
-<!-- lc:claim name=precisionNoise value=28 -->
+<!-- lc:claim name=precisionNoise value=8 -->
+<!-- lc:claim name=precisionReportedBefore value=409 -->
+<!-- lc:claim name=precisionCheckedBefore value=30 -->
+<!-- lc:claim name=precisionRealBefore value=2 -->
+<!-- lc:claim name=precisionNoiseBefore value=28 -->
 <!-- lc:claim name=precisionTestCode value=12 -->
 
 ## Czym to się różni od twojego lintera
@@ -69,11 +74,23 @@ regułami.
 
 ## Jak często się myli
 
-**2 prawdziwe defekty i 28 fałszywych alarmów na 30 sprawdzonych zgłoszeń.**
-Te 30 to pierwsza dziesiątka z każdego z trzech projektów, których wcześniej nie
-czytałem, a które łącznie zgłosiły 409. Dziesięć sprawdzonych z 359 to dziesięć
-sprawdzonych — to nie jest trafność narzędzia na całym przebiegu i nic tutaj
-tego nie twierdzi.
+Dwa pomiary, sześć projektów, żaden nie jest mój. Stoją obok siebie, a nie jako
+jedna poprawiona liczba, bo między nimi zmieniło się narzędzie i zmienił się
+materiał — a pojedyncza skorygowana liczba ukryłaby oba te fakty.
+
+|  | pierwszy przebieg | drugi przebieg |
+|---|---|---|
+| **data** | 2026-09-07 | 2026-09-07 |
+| **narzędzie** | przed wykluczeniem kodu testowego | po wykluczeniu kodu testowego |
+| **prawdziwych defektów** | **2** | **2** |
+| **fałszywych alarmów** | **28** | **8** |
+| **sprawdzonych** | 30 | 10 |
+| **zgłoszonych łącznie** | 409 | 27 |
+
+Dziesięć sprawdzonych z 359 to dziesięć sprawdzonych. Żadna z tych liczb nie
+jest trafnością narzędzia na całym przebiegu i nic tutaj tego nie twierdzi.
+
+### Pierwszy przebieg — przed wykluczeniem kodu testowego
 
 | projekt | charakter | zgłoszeń | sprawdzonych | trafnych | fałszywych |
 |---|---|---:|---:|---:|---:|
@@ -81,32 +98,64 @@ tego nie twierdzi.
 | [uptime-kuma](https://github.com/louislam/uptime-kuma) | aplikacja monitorująca, JavaScript | 34 | 10 | 2 | 8 |
 | [eslint](https://github.com/eslint/eslint) | narzędzie deweloperskie, JavaScript | 16 | 10 | 0 | 10 |
 
-Trójkę wybrano przed uruchomieniem narzędzia, według jednego ogłoszonego
-kryterium — gęstości obsługi błędów, bo trzy z czterech reguł potrzebują
-populacji — i żaden z nich nie jest mój. Każdy werdykt zapadł po przeczytaniu
-kodu w cytowanej linii. Pełny zapis, z powodem przy każdym z trzydziestu, leży
-w `test/precision.json`.
+**Co łączyło fałszywe alarmy.** W 20 z 28 awaria *była* obsłużona — limitem
+czasu na wywołaniu obejmującym, odpowiedzią HTTP 400, kompensującym `destroy()`,
+udokumentowanym torem zapasowym albo testem, którego całym tematem był brak
+limitu.
 
-**Co łączy fałszywe alarmy.** W 20 z 28 awaria *jest* obsłużona — limitem czasu
-na wywołaniu obejmującym, odpowiedzią HTTP 400, kompensującym `destroy()`,
-udokumentowanym zapasowym torem albo testem, którego całym tematem jest brak
-limitu. Narzędzie ocenia obsługę po kształcie jej własnego ciała i po wartości,
-którą zwraca, a żadna z tych dwóch rzeczy nie pokazuje, dokąd awaria naprawdę
-poszła.
+Największa pojedyncza dźwignia była prostsza: **12 z 30 to kod testowy**, a 350
+z 359 zgłoszeń w `got` leżało pod `test/`. Plik testowy nie jest warstwą — jego
+kształt dyktuje to, co dany test sprawdza — więc katalogi testowe trafiły do
+wbudowanych wykluczeń. To jedyna zmiana między przebiegami.
 
-Największa pojedyncza dźwignia jest prostsza: **12 z 30 to kod testowy**, a 350
-z 359 zgłoszeń w `got` leży pod `test/`. Plik testowy nie jest warstwą — jego
-kształt dyktuje to, co dany test sprawdza, a nie wspólna decyzja inżynierska — a
-katalogów testowych nie ma dziś we wbudowanych wykluczeniach.
+### Drugi przebieg — po wykluczeniu kodu testowego
 
-Pomiar znalazł też cztery usterki w samym narzędziu, żadna jeszcze
-niepoprawiona: `{ timeout }` zapisany skrótowo nie jest rozpoznawany jako limit;
-`fsp.stat(...).catch(...)` liczy się jako dwa odczyty i jest zgłaszany dwa razy;
-wywołanie `*Sync` nigdy nie może mieć limitu, więc zawsze wypada jako odstające;
-a awaria wykryta zwykłym predykatem trafia na ścieżkę pustki. Zostają
-niepoprawione celowo — poprawienie ich i ponowny pomiar na tych samych trzech
+| projekt | charakter | zgłoszeń | sprawdzonych | trafnych | fałszywych |
+|---|---|---:|---:|---:|---:|
+| [verdaccio](https://github.com/verdaccio/verdaccio) | serwer prywatnego rejestru npm, TypeScript | 27 | 10 | 2 | 8 |
+| [node-red](https://github.com/node-red/node-red) | środowisko programowania wizualnego, JavaScript | 0 | 0 | 0 | 0 |
+| [fastify](https://github.com/fastify/fastify) | framework webowy, JavaScript | 0 | 0 | 0 | 0 |
+
+**Dwa z trzech nie zgłosiły nic i żadne z tych zer nie dotyczy trafności.** To
+najbardziej użyteczna część tego przebiegu.
+
+*fastify* to zero uprawnione: 113 obsług błędu i 8 odczytów zewnętrznych.
+Framework webowy **przyjmuje** wywołania, zamiast je robić, więc reguły 2 i 3 nie
+miały czego grupować — a przebieg to powiedział, cztery miejsca pominięte i
+cztery warstwy bez konwencji, zamiast wypisać gołe zero. Pokazuje też, że
+kryterium doboru było tępe: te reguły potrzebują nie gęstości obsługi błędów,
+tylko gęstości obsługi błędów **nad odczytami zewnętrznymi**.
+
+*node-red* to zero nieuprawnione. Narzędzie przeczytało 11 plików z repozytorium
+zawierającego 308 plików źródłowych JavaScript, bo node-red trzyma kod pod
+`packages/node_modules/`, a wbudowane wykluczenie `**/node_modules/**` zjadło go
+w całości — **i przebieg tego nie powiedział.** `findings: 0` tam, gdzie znaczyło
+*nie zaglądałem*. To własny temat tego narzędzia, w tym narzędziu, znaleziony
+przez wycelowanie go w bazę kodu o nietypowym układzie.
+
+**Co łączy fałszywe alarmy teraz.** Pięć z ośmiu zapisuje awarię tam, gdzie
+narzędzie nie czyta: `console.warn` cztery linie pod obsługą, sprawdzenie
+`undefined`, zdarzenie `error` na strumieniu albo samo przejście dalej. To
+zaostrzona wersja wspólnego mianownika z pierwszego przebiegu — narzędzie czyta
+ciało obsługi i zwracaną wartość, a w prawdziwym kodzie zapis awarii bardzo
+często leży tuż obok obu.
+
+### Usterki, które pomiary znalazły w narzędziu
+
+Pięć, żadna niepoprawiona: `{ timeout }` zapisany skrótowo nie jest rozpoznawany
+jako limit; każde wywołanie `fs.*` jest traktowane jak odczyt, w tym zapisy,
+konstruktory strumieni i wywołania `*Sync`, które nigdy nie mogą mieć limitu;
+łańcuch `fsp.stat(...).catch(...)` liczy się dwa razy i jest zgłaszany dwa razy;
+awaria wykryta zwykłym predykatem trafia na ścieżkę pustki; a projekt, którego
+kod leży pod wykluczonym katalogiem, dostaje ciche zero.
+
+Zostają niepoprawione celowo. Poprawienie ich i ponowny pomiar na tych samych
 projektach byłby strojeniem narzędzia pod własny test, a tak właśnie liczba
-trafności staje się bezwartościowa.
+trafności staje się bezwartościowa. Wykluczenie kodu testowego to co innego —
+poprawka zakresu, prawdziwa przed pomiarem, a nie z niego wyprowadzona.
+
+Każdy werdykt zapadł po przeczytaniu kodu w cytowanej linii. Pełny zapis,
+z powodem przy każdym z czterdziestu, leży w `test/precision.json`.
 
 ## Czego NIE robi
 

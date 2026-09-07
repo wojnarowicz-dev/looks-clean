@@ -29,6 +29,13 @@ const CLI = path.join(ROOT, 'bin', 'looks-clean.mjs');
 const GOLD = path.join(HERE, 'golden');
 const UPDATE = process.argv.includes('--update');
 
+// EVERY CASE PINS THIS CONFIG, and since the defaults grew a test-code
+// exclusion it does more than shield the run from the repository's own
+// .looks-clean.json. The fixtures live under test/ on purpose — that is where
+// fixtures go — and the default exclusions now skip exactly that. So the
+// fixture config turns the defaults OFF: these directories hold nothing a
+// default exclusion protects against, and a suite that could not read its own
+// material would be the loudest possible instance of this tool's own subject.
 const CONFIG = 'test/fixtures/golden.config.json';
 
 // Thresholds are pinned per case on purpose: a golden test must not change its
