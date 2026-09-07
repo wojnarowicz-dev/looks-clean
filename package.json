@@ -32,7 +32,8 @@
     "population": "node test/population.mjs",
     "evidence": "node test/evidence.mjs",
     "resilience": "node test/resilience.mjs",
-    "known-answers": "node test/known-answers.mjs"
+    "known-answers": "node test/known-answers.mjs",
+    "readme": "node test/readme.mjs"
   },
   "keywords": [
     "static-analysis",

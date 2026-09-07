@@ -8,7 +8,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { t } from '../src/lang.mjs';
-import { firstPositional } from '../src/args.mjs';
+import { firstPositional, valueOf, VALUE_FLAGS } from '../src/args.mjs';
 import { RULE_IDS, NEEDS_POPULATION } from '../src/rules/index.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -51,15 +51,34 @@ if (rest.length === 0) {
   process.exit(2);
 }
 
+// THE POSITIONAL ARGUMENTS OF `diff` AND `rank` ARE FOUND WITH THE SAME LIST
+// THE SCAN USES, and that is a correction rather than tidiness.
+//
+// Both commands carried their own hand-written set of value-taking flags. Both
+// sets were short: `diff` knew about `--lang`, `rank` about `--top` and
+// `--lang`, and neither knew about `--config`. So `rank run.json --config x.json`
+// put `x.json` on the list of snapshots to read, the read failed, and the
+// command exited 2 — reported by the README gate, which runs every command the
+// documentation shows.
+//
+// One list, in src/args.mjs, and a new value-taking flag has one place to be
+// added rather than three.
+const positionals = (argv) => {
+  const out = [];
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (a.startsWith('--')) {
+      if (VALUE_FLAGS.has(a.slice(2))) i++;
+      continue;
+    }
+    out.push(a);
+  }
+  return out;
+};
+
 if (cmd === 'diff') {
   const { readSnapshot, printDiff } = await import(mod('snapshot.mjs'));
-  // `--lang` eats the token after it, exactly as `--top` does under `rank`.
-  const files = [];
-  for (let i = 0; i < rest.length; i++) {
-    if (rest[i] === '--lang') { i++; continue; }
-    if (rest[i].startsWith('--')) continue;
-    files.push(rest[i]);
-  }
+  const files = positionals(rest);
   if (files.length !== 2) {
     console.error(t('diffNeedsTwo'));
     process.exit(2);
@@ -73,19 +92,8 @@ if (cmd === 'diff') {
 if (cmd === 'rank') {
   const { readSnapshot } = await import(mod('snapshot.mjs'));
   const { printRanking } = await import(mod('rank.mjs'));
-  // Value-taking flags eat the token after them. Without this, `--top 8` puts
-  // "8" on the list of snapshot files and the run dies reading it.
-  const VALUE = new Set(['--top', '--lang']);
-  const files = [];
-  let top = 20;
-  for (let i = 0; i < rest.length; i++) {
-    if (VALUE.has(rest[i])) {
-      if (rest[i] === '--top') top = +rest[i + 1] || 20;
-      i++; continue;
-    }
-    if (rest[i].startsWith('--')) continue;
-    files.push(rest[i]);
-  }
+  const files = positionals(rest);
+  const top = +valueOf(rest, 'top', 20) || 20;
   if (files.length === 0) {
     console.error(t('rankNeedsOne'));
     process.exit(2);

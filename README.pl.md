@@ -16,7 +16,7 @@ Nie ma poglądów. Ma sąsiadów.
 <!-- lc:claim name=rulesNeedingPopulation value=3 -->
 <!-- lc:claim name=layers value=10 -->
 <!-- lc:claim name=knownAnswers value=6 -->
-<!-- lc:claim name=knownAnswersFound value=5 -->
+<!-- lc:claim name=knownAnswersInScope value=5 -->
 <!-- lc:claim name=families value=8 -->
 <!-- lc:claim name=languages value=2 -->
 <!-- lc:claim name=messages value=135 -->

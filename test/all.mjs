@@ -19,10 +19,6 @@
 // dictionary is reported in a second rather than after two minutes of parsing.
 // The layers that reach outside the repository run last.
 //
-// LAYER 10, the README gate, IS ADDED BY THE COMMIT THAT WRITES IT. Listing a
-// layer here before it exists would make this runner report MISSING on a
-// repository where nothing is missing yet.
-//
 // THE LIST IS EXPLICIT, not read off the directory. A layer file deleted by
 // accident has to fail here; discovering the layers would make its removal
 // invisible, which is this project's subject in its own test runner.
@@ -42,6 +38,7 @@ const LAYERS = [
   ['population', 'every finding\'s arithmetic holds'],
   ['evidence', 'every citation is real'],
   ['resilience', 'fail loudly, never quietly'],
+  ['readme', 'the README agrees with the tool'],
   ['known-answers', 'the six hand-traced defects'],
 ];
 
