@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>looks-clean fixture page</title>
+</head>
+<body>
+  <!--
+    This comment mentions <script> on purpose. Before HTML comments were blanked
+    out, the word inside a comment was taken as an opening tag and paired with a
+    closing tag far below, so prose and CSS reached the parser as JavaScript.
+    Whatever this fixture reports must not come from in here.
+  -->
+  <div id="app"></div>
+
+  <script type="application/ld+json">
+    { "@context": "https://schema.org", "name": "not JavaScript" }
+  </script>
+
+  <script>
+    // FIXTURE — the inline-script path, and the line numbers it reports.
+    // Every number in the report has to point at a line in THIS FILE, not at a
+    // line in the extracted block. Four reads; loadNews has no deadline.
+    async function loadPosts() {
+      const r = await fetch('/api/posts', { signal: AbortSignal.timeout(5000) });
+      return r.json();
+    }
+
+    async function loadTags() {
+      const r = await fetch('/api/tags', { signal: AbortSignal.timeout(5000) });
+      return r.json();
+    }
+
+    async function loadAuthors() {
+      const r = await fetch('/api/authors', { signal: AbortSignal.timeout(5000) });
+      return r.json();
+    }
+
+    // THE PLANTED DEVIATION.
+    async function loadNews() {
+      const r = await fetch('/api/news');
+      return r.json();
+    }
+
+    window.boot = function () {
+      return Promise.all([loadPosts(), loadTags(), loadAuthors(), loadNews()]);
+    };
+  </script>
+</body>
+</html>

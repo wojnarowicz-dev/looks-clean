@@ -1,0 +1,73 @@
+{
+  "mutedCount": 0,
+  "version": 1,
+  "tool": "looks-clean",
+  "detector": "scan",
+  "args": [
+    "--rule",
+    "no-timeout",
+    "--config",
+    "test/fixtures/golden.config.json",
+    "--lang",
+    "en"
+  ],
+  "counts": {
+    "files": 4,
+    "htmlBlocks": 0,
+    "functions": 50,
+    "handlers": 15,
+    "reads": 19,
+    "findings": 1,
+    "passedOver": 12,
+    "noConvention": 12,
+    "parseErrors": 0,
+    "generated": 0,
+    "unreadable": 0
+  },
+  "findings": [
+    {
+      "id": "abe52bb0f4c4",
+      "detector": "scan",
+      "rule": "no-timeout",
+      "file": "net.js",
+      "line": 23,
+      "anchor": "fetch@saveProfile",
+      "label": "saveProfile reads fetch with no time limit",
+      "meta": {
+        "unit": "saveProfile@net",
+        "peers": 4,
+        "safe": 3,
+        "odd": 1,
+        "conf": 0.75,
+        "layer": "net.js",
+        "layerKind": "file",
+        "family": "net",
+        "guard": "AbortSignal.timeout"
+      },
+      "detail": {
+        "callee": "fetch",
+        "guard": "AbortSignal.timeout",
+        "layerText": "this file net.js",
+        "neighbours": [
+          {
+            "file": "net.js",
+            "line": 13,
+            "note": "saveDream — AbortSignal.timeout"
+          },
+          {
+            "file": "net.js",
+            "line": 31,
+            "note": "saveNote — AbortSignal.timeout"
+          },
+          {
+            "file": "net.js",
+            "line": 42,
+            "note": "saveTag — signal"
+          }
+        ]
+      },
+      "unitId": "54d8f5e1bc08"
+    }
+  ],
+  "root": "test/fixtures/project"
+}

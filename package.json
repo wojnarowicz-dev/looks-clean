@@ -1,0 +1,45 @@
+{
+  "name": "looks-clean",
+  "version": "0.1.0",
+  "description": "Finds places where a failure is indistinguishable from an empty result — by comparing a site with its own neighbours, not with a rulebook. JavaScript and TypeScript.",
+  "license": "MIT",
+  "author": "Aleksander Wojnarowicz",
+  "type": "module",
+  "bin": {
+    "looks-clean": "bin/looks-clean.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "test",
+    "README.md",
+    "README.pl.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node bin/looks-clean.mjs",
+    "self-check": "node bin/looks-clean.mjs scan src --json .looks-clean/self.json",
+    "golden": "node test/golden.mjs",
+    "golden:update": "node test/golden.mjs --update",
+    "resilience": "node test/resilience.mjs",
+    "lang-check": "node test/lang-check.mjs",
+    "known-answers": "node test/known-answers.mjs",
+    "test": "node test/golden.mjs && node test/resilience.mjs && node test/lang-check.mjs"
+  },
+  "keywords": [
+    "static-analysis",
+    "error-handling",
+    "silent-failure",
+    "anomaly-detection",
+    "javascript",
+    "typescript",
+    "tree-sitter"
+  ],
+  "dependencies": {
+    "tree-sitter-typescript": "^0.23.2",
+    "web-tree-sitter": "^0.27.0"
+  }
+}

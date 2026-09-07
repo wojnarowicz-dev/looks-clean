@@ -1,0 +1,73 @@
+{
+  "mutedCount": 0,
+  "version": 1,
+  "tool": "looks-clean",
+  "detector": "scan",
+  "args": [
+    "--minpop",
+    "3",
+    "--config",
+    "test/fixtures/golden.config.json",
+    "--lang",
+    "en"
+  ],
+  "counts": {
+    "files": 1,
+    "htmlBlocks": 1,
+    "functions": 10,
+    "handlers": 0,
+    "reads": 4,
+    "findings": 1,
+    "passedOver": 0,
+    "noConvention": 0,
+    "parseErrors": 0,
+    "generated": 0,
+    "unreadable": 0
+  },
+  "findings": [
+    {
+      "id": "b9767658823a",
+      "detector": "scan",
+      "rule": "no-timeout",
+      "file": "index.html",
+      "line": 41,
+      "anchor": "fetch@loadNews",
+      "label": "loadNews reads fetch with no time limit",
+      "meta": {
+        "unit": "loadNews@net",
+        "peers": 4,
+        "safe": 3,
+        "odd": 1,
+        "conf": 0.75,
+        "layer": "index.html",
+        "layerKind": "file",
+        "family": "net",
+        "guard": "AbortSignal.timeout"
+      },
+      "detail": {
+        "callee": "fetch",
+        "guard": "AbortSignal.timeout",
+        "layerText": "this file index.html",
+        "neighbours": [
+          {
+            "file": "index.html",
+            "line": 25,
+            "note": "loadPosts — AbortSignal.timeout"
+          },
+          {
+            "file": "index.html",
+            "line": 30,
+            "note": "loadTags — AbortSignal.timeout"
+          },
+          {
+            "file": "index.html",
+            "line": 35,
+            "note": "loadAuthors — AbortSignal.timeout"
+          }
+        ]
+      },
+      "unitId": "645148fe1019"
+    }
+  ],
+  "root": "test/fixtures/page"
+}

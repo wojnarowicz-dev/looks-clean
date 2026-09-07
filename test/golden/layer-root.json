@@ -1,0 +1,283 @@
+{
+  "mutedCount": 0,
+  "version": 1,
+  "tool": "looks-clean",
+  "detector": "scan",
+  "args": [
+    "--layer",
+    "root",
+    "--minpop",
+    "4",
+    "--config",
+    "test/fixtures/golden.config.json",
+    "--lang",
+    "en"
+  ],
+  "counts": {
+    "files": 4,
+    "htmlBlocks": 0,
+    "functions": 50,
+    "handlers": 15,
+    "reads": 19,
+    "findings": 6,
+    "passedOver": 13,
+    "noConvention": 12,
+    "parseErrors": 0,
+    "generated": 0,
+    "unreadable": 0
+  },
+  "findings": [
+    {
+      "id": "fcc54ea9479e",
+      "detector": "scan",
+      "rule": "default-on-error",
+      "file": "api.js",
+      "line": 44,
+      "anchor": "sb.rpc->[]",
+      "label": "sb.rpc answers [] on failure, and [] also means \"no data\"",
+      "meta": {
+        "unit": "loadReviews@supabase",
+        "peers": 4,
+        "safe": 3,
+        "odd": 1,
+        "conf": 0.75,
+        "layer": "the scanned tree",
+        "layerKind": "root",
+        "family": "supabase",
+        "value": "[]",
+        "handler": "promise-catch"
+      },
+      "detail": {
+        "snippet": "{ return []; }",
+        "value": "[]",
+        "layerText": "the whole scanned tree",
+        "neighbours": [
+          {
+            "file": "api.js",
+            "line": 13,
+            "note": "sb.rpc — answers with the outcome attached"
+          },
+          {
+            "file": "api.js",
+            "line": 22,
+            "note": "sb.rpc — answers with the outcome attached"
+          },
+          {
+            "file": "api.js",
+            "line": 31,
+            "note": "sb.rpc — answers with the outcome attached"
+          }
+        ]
+      },
+      "unitId": "f8947b58ae58"
+    },
+    {
+      "id": "abe52bb0f4c4",
+      "detector": "scan",
+      "rule": "no-timeout",
+      "file": "net.js",
+      "line": 23,
+      "anchor": "fetch@saveProfile",
+      "label": "saveProfile reads fetch with no time limit",
+      "meta": {
+        "unit": "saveProfile@net",
+        "peers": 4,
+        "safe": 3,
+        "odd": 1,
+        "conf": 0.75,
+        "layer": "the scanned tree",
+        "layerKind": "root",
+        "family": "net",
+        "guard": "AbortSignal.timeout"
+      },
+      "detail": {
+        "callee": "fetch",
+        "guard": "AbortSignal.timeout",
+        "layerText": "the whole scanned tree",
+        "neighbours": [
+          {
+            "file": "net.js",
+            "line": 13,
+            "note": "saveDream — AbortSignal.timeout"
+          },
+          {
+            "file": "net.js",
+            "line": 31,
+            "note": "saveNote — AbortSignal.timeout"
+          },
+          {
+            "file": "net.js",
+            "line": 42,
+            "note": "saveTag — signal"
+          }
+        ]
+      },
+      "unitId": "54d8f5e1bc08"
+    },
+    {
+      "id": "f29b79ee0943",
+      "detector": "scan",
+      "rule": "swallowed",
+      "file": "api.js",
+      "line": 42,
+      "anchor": "loadReviews/promise-catch/sb.rpc",
+      "label": "sb.rpc swallows the failure and leaves no trace",
+      "meta": {
+        "unit": "loadReviews@supabase",
+        "peers": 4,
+        "safe": 3,
+        "odd": 1,
+        "conf": 0.75,
+        "layer": "the scanned tree",
+        "layerKind": "root",
+        "family": "supabase",
+        "handler": "promise-catch"
+      },
+      "detail": {
+        "snippet": "{ return []; }",
+        "alone": false,
+        "layerText": "the whole scanned tree",
+        "neighbours": [
+          {
+            "file": "api.js",
+            "line": 13,
+            "note": "sb.rpc — uses the error"
+          },
+          {
+            "file": "api.js",
+            "line": 22,
+            "note": "sb.rpc — uses the error"
+          },
+          {
+            "file": "api.js",
+            "line": 31,
+            "note": "sb.rpc — uses the error"
+          }
+        ]
+      },
+      "unitId": "f8947b58ae58"
+    },
+    {
+      "id": "630447dc5f39",
+      "detector": "scan",
+      "rule": "swallowed",
+      "file": "disk.js",
+      "line": 46,
+      "anchor": "readManifest/catch/fs.readFileSync",
+      "label": "fs.readFileSync swallows the failure and leaves no trace",
+      "meta": {
+        "unit": "readManifest@fs",
+        "peers": 4,
+        "safe": 3,
+        "odd": 1,
+        "conf": 0.75,
+        "layer": "the scanned tree",
+        "layerKind": "root",
+        "family": "fs",
+        "handler": "catch"
+      },
+      "detail": {
+        "snippet": "{ /* no manifest is fine */ }",
+        "alone": false,
+        "layerText": "the whole scanned tree",
+        "neighbours": [
+          {
+            "file": "disk.js",
+            "line": 16,
+            "note": "fs.readFileSync — rethrows"
+          },
+          {
+            "file": "disk.js",
+            "line": 24,
+            "note": "fs.readFileSync — logs it"
+          },
+          {
+            "file": "disk.js",
+            "line": 35,
+            "note": "fs.readFileSync — uses the error"
+          }
+        ]
+      },
+      "unitId": "711a40f031ec"
+    },
+    {
+      "id": "0cb55b05ded6",
+      "detector": "scan",
+      "rule": "default-on-error",
+      "file": "store.js",
+      "line": 34,
+      "anchor": "db.query->null",
+      "label": "db.query answers null on failure, and null also means \"no data\"",
+      "meta": {
+        "unit": "readDrafts@db",
+        "peers": 4,
+        "safe": 2,
+        "odd": 2,
+        "conf": 0.5,
+        "layer": "the scanned tree",
+        "layerKind": "root",
+        "family": "db",
+        "value": "null",
+        "handler": "catch"
+      },
+      "detail": {
+        "snippet": "{ console.error('readDrafts failed', e); return null; }",
+        "value": "null",
+        "layerText": "the whole scanned tree",
+        "neighbours": [
+          {
+            "file": "store.js",
+            "line": 14,
+            "note": "db.query — answers with the outcome attached"
+          },
+          {
+            "file": "store.js",
+            "line": 23,
+            "note": "db.query — rethrows instead of answering"
+          }
+        ]
+      },
+      "unitId": "d3165763bc77"
+    },
+    {
+      "id": "46b87d91973b",
+      "detector": "scan",
+      "rule": "default-on-error",
+      "file": "store.js",
+      "line": 45,
+      "anchor": "db.query->[]",
+      "label": "db.query answers [] on failure, and [] also means \"no data\"",
+      "meta": {
+        "unit": "readEntries@db",
+        "peers": 4,
+        "safe": 2,
+        "odd": 2,
+        "conf": 0.5,
+        "layer": "the scanned tree",
+        "layerKind": "root",
+        "family": "db",
+        "value": "[]",
+        "handler": "catch"
+      },
+      "detail": {
+        "snippet": "{ console.error('readEntries failed', e); return []; }",
+        "value": "[]",
+        "layerText": "the whole scanned tree",
+        "neighbours": [
+          {
+            "file": "store.js",
+            "line": 14,
+            "note": "db.query — answers with the outcome attached"
+          },
+          {
+            "file": "store.js",
+            "line": 23,
+            "note": "db.query — rethrows instead of answering"
+          }
+        ]
+      },
+      "unitId": "36b56728383a"
+    }
+  ],
+  "root": "test/fixtures/project"
+}
