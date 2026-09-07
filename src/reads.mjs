@@ -19,9 +19,21 @@
  * Ordered matchers over the callee text. First match wins, so the specific
  * patterns come before the general ones.
  */
+// The words a supabase chain is built from, and the operations it ends on.
+// BOTH HALVES ARE NEEDED, and each half was got wrong once:
+//   * requiring only the ending  -> `list.remove(i)` became a database read
+//   * requiring only a chain word -> `Array.from(x)` became one
+//   * looking for the chain word only BEFORE the last segment -> `sb.rpc('x')`
+//     stopped being one, because there `rpc` is both the chain word and the
+//     operation. That regression is why `sb.rpc` and `sb.from.select` both have
+//     rows in test/vocabulary.mjs: the alias `sb` is the spelling in the real
+//     material, and the version that broke passed every example named
+//     `supabase.*`.
+const SUPABASE_CHAIN = new Set(['from', 'rpc', 'storage', 'auth', 'functions', 'realtime', 'channel']);
+const SUPABASE_TAIL = /^(select|insert|update|upsert|delete|rpc|download|upload|remove|list|signIn\w*|signUp|signOut|getUser|getSession|refreshSession|invoke)$/;
+
 const FAMILIES = [
-  ['supabase', /(^|\.)(rpc|from|storage|auth|functions|realtime|channel)$|supabase/i,
-    /(^|\.)(select|insert|update|upsert|delete|rpc|download|upload|remove|list|signIn\w*|signUp|signOut|getUser|getSession|refreshSession|invoke)$/],
+  ['supabase', null, null],   // handled by shape, below
   ['net', /^(fetch|axios|got|ky|superagent|request)$|^(axios|got|ky|http|https)\.(get|post|put|patch|delete|head|request)$|\.(fetch)$|XMLHttpRequest/],
   // `.find(` and `.filter(` are NOT here, and that is a correction rather than
   // an omission. With `\.find$` in the pattern, `data.users.find(u => ...)` —
@@ -40,17 +52,31 @@ const FAMILIES = [
 /**
  * The family of a call, or null when the call is not a read.
  *
- * The supabase entry is the one with two patterns: the client is reached
- * through a chain (`sb.from('x').select('y')`), so the family is decided by the
- * head of the chain and the operation by its tail. Testing only the tail would
- * catch every `.list()` and `.find()` in the project.
+ * SUPABASE IS MATCHED BY THE SHAPE OF THE CHAIN, not by the name at its head.
+ *
+ * The first version required the head to be called something containing
+ * "supabase", or the callee to END on a chain word. Both were wrong for the
+ * commonest spelling there is: `sb.from('review_credits').select('reviews_left')`
+ * has a head called `sb` and ends on `select`, so it matched neither and was
+ * not a read at all. In the file this tool was built against, that silently
+ * removed table reads from the supabase population while leaving the `sb.rpc`
+ * ones in — a smaller population, weaker evidence behind every finding in it,
+ * and nothing anywhere saying so.
+ *
+ * The shape is what identifies it: the chain passes through `from`, `rpc`,
+ * `storage`, `auth`, `functions`, `realtime` or `channel`, and ends on an
+ * operation. `Array.from(x)` passes through `from` and ends there, so it is
+ * not one; `list.remove(i)` ends on an operation without passing through
+ * anything, so neither is it.
  */
 export function familyOf(calleeText, chainHead) {
   const callee = String(calleeText || '').replace(/\s+/g, '');
   if (!callee) return null;
 
-  const [, headRe, tailRe] = FAMILIES[0];
-  if (tailRe.test(callee) && (headRe.test(String(chainHead || '')) || headRe.test(callee)))
+  const segments = callee.split('.');
+  const tail = segments[segments.length - 1];
+  if (SUPABASE_TAIL.test(tail) &&
+    (segments.some(s => SUPABASE_CHAIN.has(s)) || /supabase/i.test(String(chainHead || ''))))
     return 'supabase';
 
   for (let i = 1; i < FAMILIES.length; i++) {

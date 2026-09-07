@@ -22,12 +22,17 @@
   "scripts": {
     "start": "node bin/looks-clean.mjs",
     "self-check": "node bin/looks-clean.mjs scan src --json .looks-clean/self.json",
+    "test": "node test/all.mjs",
+    "vocabulary": "node test/vocabulary.mjs",
+    "lang-check": "node test/lang-check.mjs",
+    "negative": "node test/negative.mjs",
     "golden": "node test/golden.mjs",
     "golden:update": "node test/golden.mjs --update",
+    "amplify": "node test/amplify.mjs",
+    "population": "node test/population.mjs",
+    "evidence": "node test/evidence.mjs",
     "resilience": "node test/resilience.mjs",
-    "lang-check": "node test/lang-check.mjs",
-    "known-answers": "node test/known-answers.mjs",
-    "test": "node test/golden.mjs && node test/resilience.mjs && node test/lang-check.mjs"
+    "known-answers": "node test/known-answers.mjs"
   },
   "keywords": [
     "static-analysis",
