@@ -153,21 +153,51 @@ scenario('non-UTF-8 source (cp1250)', 'bytes that are not valid UTF-8',
   },
   ['outside UTF-8', 'spoza UTF-8', 'cp1250.js']);
 
+// DENYING A READ IS PLATFORM WORK, AND KNOWING ONLY ONE PLATFORM COST A LAYER.
+//
+// The first version used `icacls` and nothing else. On Windows it staged the
+// damage and the scenario ran; on Linux `icacls` does not exist, the scenario
+// reported SKIP, and a SKIP makes this whole layer exit 2 — so on any CI runner
+// the resilience layer would have said "could not check" for a reason that had
+// nothing to do with the tool. The suite would have been amber for the wrong
+// reason, which is a way of hiding the right one.
+//
+// `chmod 000` is the POSIX equivalent and it works on a GitHub runner, which
+// runs as an unprivileged user. It does NOT work for root — root ignores the
+// mode bits — so that case is detected and reported as a SKIP with its own
+// reason rather than passing on a read that was never actually blocked.
 scenario('unreadable source file', 'read permission denied',
   () => {
     const d = copyFixture('project', dir('denied'));
     const target = path.join(d, 'locked.js');
     fs.copyFileSync(path.join(d, 'store.js'), target);
-    const who = process.env.USERNAME || process.env.USER;
-    if (!who) return { skip: 'no USERNAME to deny' };
-    try {
-      execFileSync('icacls', [target, '/deny', who + ':(R)'], { stdio: 'ignore' });
-    } catch (e) {
-      return { skip: 'icacls failed: ' + String(e.message).slice(0, 60) };
+
+    if (process.platform === 'win32') {
+      const who = process.env.USERNAME || process.env.USER;
+      if (!who) return { skip: 'no USERNAME to deny' };
+      try {
+        execFileSync('icacls', [target, '/deny', who + ':(R)'], { stdio: 'ignore' });
+      } catch (e) {
+        return { skip: 'icacls failed: ' + String(e.message).slice(0, 60) };
+      }
+    } else {
+      try {
+        fs.chmodSync(target, 0o000);
+      } catch (e) {
+        return { skip: 'chmod failed: ' + String(e.message).slice(0, 60) };
+      }
     }
+
+    // THE STAGING IS VERIFIED, NOT ASSUMED. A scenario that believes it has
+    // denied a read it has not denied is a test measuring a healthy run — the
+    // exact mistake the control runs in this file exist to prevent.
     try {
       fs.readFileSync(target);
-      return { skip: 'icacls /deny did not actually block reading' };
+      return {
+        skip: process.platform === 'win32'
+          ? 'icacls /deny did not actually block reading'
+          : 'chmod 000 did not block reading (running as root?)',
+      };
     } catch {
       return ['scan', d];
     }

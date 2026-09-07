@@ -1,0 +1,165 @@
+# looks-clean — continuous integration.
+#
+# THE WHOLE PROBLEM THIS FILE HAS TO SOLVE IS THE EXIT CODE.
+#
+# `npm test` has three outcomes, and they mean three different things:
+#
+#   0   every layer ran and everything held
+#   1   a layer ran and something is wrong
+#   2   a layer could not reach its material, so it proves nothing
+#
+# GitHub Actions has two: success and failure. There is no amber for a workflow
+# run, and a check run can only be "neutral" through the Checks API, which a
+# workflow cannot reach. So exit 2 has to be mapped onto one of two colours, and
+# both mappings are lies of a different kind:
+#
+#   map 2 -> red    the badge is permanently red on this repository, because
+#                   known answer 4 is permanently out of language scope. A badge
+#                   that is always red is a badge nobody reads, and then the day
+#                   it means something nobody notices.
+#   map 2 -> green  the badge says "passing" over material that was never
+#                   opened. That is this tool's own subject — "I found nothing"
+#                   standing in for "I could not check" — committed in the one
+#                   place every visitor looks first.
+#
+# WHAT IS DONE INSTEAD. Exit 2 keeps the job green, so the badge stays useful,
+# and three other things make the green impossible to misread:
+#
+#   * a ::warning:: annotation on the run, which GitHub shows in amber
+#   * a job summary that NAMES every answer that could not be checked
+#   * a second badge in both READMEs, permanent and checked by test/readme.mjs,
+#     saying how many known answers need material CI does not have
+#
+# The green badge therefore never stands alone. Beside it, in the same line of
+# the README, is a sentence saying exactly what green does not cover.
+#
+# Exit 1 is red, without qualification. A known answer that was reachable and
+# was LOST is a regression, and there is nothing amber about it.
+
+name: tests
+
+on:
+  push:
+  pull_request:
+
+# Least privilege: this workflow reads the repository and writes nothing.
+permissions:
+  contents: read
+
+# A superseded push has nothing to say. Cancelling it keeps the badge showing
+# the head of the branch rather than whichever run happened to finish last.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: npm test (node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      # BOTH VERSIONS ARE REPORTED. With fail-fast the second is cancelled the
+      # moment the first fails, and "did it break on 18 or on both" is exactly
+      # what the matrix exists to answer.
+      fail-fast: false
+      matrix:
+        # 18 is the floor declared in package.json "engines"; 24 is the newer
+        # one. If the floor is wrong, this is where it becomes visible instead
+        # of arriving as somebody else's bug report.
+        node: ['18', '24']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      # --ignore-scripts on purpose. tree-sitter-typescript declares
+      # `install: node-gyp-build`, which builds native bindings this project
+      # never loads: src/parser.mjs resolves the .wasm files that ship inside
+      # the package. Skipping the build removes a compiler from the critical
+      # path of a test suite that does not use it.
+      - name: install
+        run: npm ci --ignore-scripts
+
+      - name: npm test
+        id: suite
+        run: |
+          set +e
+          npm test --silent 2>&1 | tee suite.log
+          code=${PIPESTATUS[0]}
+          set -e
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          echo "exit code: $code"
+          exit 0
+
+      - name: read the exit code
+        env:
+          CODE: ${{ steps.suite.outputs.code }}
+          NODE: ${{ matrix.node }}
+        run: |
+          summary() { echo "$1" >> "$GITHUB_STEP_SUMMARY"; }
+
+          # The layers that did not simply pass, taken from the runner's own
+          # output rather than restated here. A summary that paraphrases is a
+          # summary that drifts.
+          layers=$(grep -E '^  (SKIP|FAIL) ' suite.log || true)
+
+          case "$CODE" in
+            0)
+              summary "### node $NODE — all ten layers passed"
+              summary ""
+              summary '```'
+              grep -E '^  (pass|SKIP|FAIL) |layers\)$' suite.log >> "$GITHUB_STEP_SUMMARY" || true
+              summary '```'
+              ;;
+            2)
+              # NOT A FAILURE AND NOT A PASS. The job stays green so the badge
+              # keeps meaning something, and everything below exists so that
+              # green cannot be mistaken for "everything was checked".
+              echo "::warning title=Material unreachable::npm test exited 2 on node $NODE. One or more layers could not reach their material, so they prove nothing. This is not a failure and it is not a pass — see the run summary."
+              summary "### node $NODE — :warning: some material was unreachable"
+              summary ""
+              summary "\`npm test\` exited **2**. That is neither a pass nor a failure: a layer"
+              summary "could not reach what it needed, so it proves nothing about it."
+              summary ""
+              summary "**Layers that did not pass:**"
+              summary ""
+              summary '```'
+              echo "${layers:-(none reported)}" >> "$GITHUB_STEP_SUMMARY"
+              summary '```'
+              summary ""
+              summary "**Why, in this runner's own words:**"
+              summary ""
+              summary '```'
+              sed -n '/unreachable/,/^$/p' suite.log | head -20 >> "$GITHUB_STEP_SUMMARY" || true
+              summary '```'
+              summary ""
+              summary "Four of the six known answers need repositories that are not public."
+              summary "One of those four is permanently out of scope: the checker in known"
+              summary "answer 4 is not JavaScript, and this build reads JavaScript only."
+              summary "See \`test/known-answers.mjs\`."
+              ;;
+            *)
+              echo "::error title=Tests failed::npm test exited $CODE on node $NODE."
+              summary "### node $NODE — :x: failed"
+              summary ""
+              summary '```'
+              echo "${layers:-(no layer lines found)}" >> "$GITHUB_STEP_SUMMARY"
+              summary '```'
+              summary ""
+              summary '```'
+              tail -40 suite.log >> "$GITHUB_STEP_SUMMARY"
+              summary '```'
+              exit 1
+              ;;
+          esac
+
+      # The scan of this project's own source is a claim the README makes, so it
+      # is checked here too. It must stay at zero findings: every site where a
+      # swallowed failure is the right answer carries a written
+      # `// looks-clean: ok — reason`.
+      - name: self-check
+        run: node bin/looks-clean.mjs scan src

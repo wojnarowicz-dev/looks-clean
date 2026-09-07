@@ -433,6 +433,64 @@ for (const [file, lang] of PAGES) {
   }
 }
 
+// ---------------------------------------------------------------- 8. the badges
+//
+// A BADGE IS A CLAIM, AND THE SECOND ONE IS THE CLAIM THAT MATTERS.
+//
+// GitHub Actions has no amber. `npm test` exits 2 when a layer could not reach
+// its material, and CI maps that onto a green job so the badge stays useful —
+// which leaves a green badge standing over four known answers nobody checked.
+// The static yellow badge beside it is what stops that being a lie, so it is
+// held to the same standard as every other number on the page: it is re-derived
+// by running the contract with no external material, exactly as CI does.
+{
+  const WORKFLOW = '.github/workflows/ci.yml';
+  check('the CI workflow exists', fs.existsSync(path.join(ROOT, WORKFLOW)), WORKFLOW);
+
+  // What the known-answer contract reports when it cannot reach the private
+  // repositories — which is the state every CI run is in.
+  const r = spawnSync(process.execPath, [path.join(HERE, 'known-answers.mjs')], {
+    cwd: ROOT, encoding: 'utf8', maxBuffer: 1e9,
+    env: { ...process.env, LC_ODD: path.join(ROOT, 'no-such-checkout'), LC_WEB: path.join(ROOT, 'no-such-checkout') },
+  });
+  const out = (r.stdout || '') + (r.stderr || '');
+  const m = out.match(/(\d+) found \([^)]*\), (\d+) lost, (\d+) unreachable\s+\((\d+) answers\)/);
+  check('the contract reports its CI state', !!m && r.status === 2,
+    m ? m[3] + ' unreachable of ' + m[4] + ', exit ' + r.status : 'could not parse the summary');
+
+  if (m) {
+    const unreachable = m[3], total = m[4];
+    for (const [file] of PAGES) {
+      const badges = [...text[file].matchAll(/\[!\[[^\]]*\]\(([^)]+)\)\]\(([^)]+)\)/g)];
+      check(file + ' carries two badges at the top', badges.length >= 2, badges.length + ' found');
+
+      // The workflow badge must point at a workflow that is really there.
+      const wf = badges.find(b => /actions\/workflows\//.test(b[1]));
+      check(file + ' badge names a real workflow',
+        !!wf && wf[1].includes(path.basename(WORKFLOW)) && wf[1].includes('badge.svg'),
+        wf ? wf[1].split('/actions/')[1] : 'no workflow badge');
+
+      // The honest half: the numbers baked into the shields.io URL must be the
+      // numbers the contract reports. Nothing else on this page is allowed to
+      // be a remembered figure, and a badge is the most-read figure of all.
+      const yellow = badges.find(b => /img\.shields\.io/.test(b[1]));
+      if (!yellow) {
+        check(file + ' carries the known-answer badge', false, 'no shields.io badge');
+      } else {
+        const url = decodeURIComponent(yellow[1]);
+        const ok = new RegExp('\\b' + unreachable + '\\b').test(url) &&
+          new RegExp('\\b' + total + '\\b').test(url) && /yellow/.test(url);
+        check(file + ' known-answer badge states the real numbers', ok,
+          ok ? unreachable + ' of ' + total + ', yellow'
+            : 'badge says ' + JSON.stringify(url.split('/badge/')[1] || url) +
+              ', the contract says ' + unreachable + ' of ' + total);
+        check(file + ' known-answer badge links to the contract',
+          yellow[2].includes('known-answers.mjs'), yellow[2]);
+      }
+    }
+  }
+}
+
 console.log('\n  ' + (failed ? failed + ' failed' : 'both pages agree with the tool'));
 if (failed) {
   console.log('\n  The code is the fact and the README is the claim. Fix the claim, or fix');

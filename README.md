@@ -1,5 +1,13 @@
 # looks-clean
 
+[![tests](https://github.com/wojnarowicz-dev/looks-clean/actions/workflows/ci.yml/badge.svg)](https://github.com/wojnarowicz-dev/looks-clean/actions/workflows/ci.yml)
+[![known answers: 4 of 6 need private material](https://img.shields.io/badge/known%20answers-4%20of%206%20need%20private%20material-yellow)](test/known-answers.mjs)
+
+> The green badge covers the ten test layers. It does **not** cover four of the
+> six known answers: they need repositories that are not public, so CI reports
+> them as unreachable rather than as passing. The second badge says so, and
+> `test/readme.mjs` checks that its number is the number the suite reports.
+
 *[Polski](README.pl.md)*
 
 **For the person who has to answer, at two in the morning, whether the screen is

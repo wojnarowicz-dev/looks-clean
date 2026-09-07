@@ -1,5 +1,13 @@
 # looks-clean
 
+[![tests](https://github.com/wojnarowicz-dev/looks-clean/actions/workflows/ci.yml/badge.svg)](https://github.com/wojnarowicz-dev/looks-clean/actions/workflows/ci.yml)
+[![znane odpowiedzi: 4 z 6 wymaga prywatnego materialu](https://img.shields.io/badge/znane%20odpowiedzi-4%20z%206%20wymaga%20prywatnego%20materialu-yellow)](test/known-answers.mjs)
+
+> Zielona odznaka obejmuje dziesięć warstw testowych. **Nie** obejmuje czterech
+> z sześciu znanych odpowiedzi: wymagają repozytoriów, które nie są publiczne,
+> więc CI zgłasza je jako nieosiągalne, a nie jako zaliczone. Druga odznaka o tym
+> mówi, a `test/readme.mjs` sprawdza, czy jej liczba to liczba, którą podaje zestaw.
+
 *[English](README.md)*
 
 **Dla kogoś, kto o drugiej w nocy musi odpowiedzieć, czy ekran jest pusty
