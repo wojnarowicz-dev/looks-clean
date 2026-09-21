@@ -78,6 +78,10 @@ export const LITERAL_TYPES = new Set([
   'hex_floating_point_literal',
 ]);
 
+/** See the note in js.mjs: narrow on purpose, and equivalent to the existing test. */
+export const isHandlerBody = node =>
+  node.type === 'block' && !!node.parent && node.parent.type === 'catch_clause';
+
 export const BLOCK_TYPE = 'block';
 
 /** Where the condition of an `if` is kept. Dart keeps it by position instead. */

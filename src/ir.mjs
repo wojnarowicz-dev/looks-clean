@@ -403,6 +403,11 @@ export function analyse(tree, file, off = 0, syn) {
     const stop = fn ? fn.node : root;
     while (n && n !== stop) {
       if (n.type === 'catch_clause') return 'failure';
+      // ASKED OF THE LANGUAGE, because one of the three cannot be asked by node
+      // type: a Dart handler body is a sibling of its clause, so the walk above
+      // never reaches a catch_clause and every return inside a Dart catch read
+      // as a normal one. See isHandlerBody in each syntax module.
+      if (syn.isHandlerBody(n)) return 'failure';
       if (n.type === 'if_statement') {
         const cons = n.childForFieldName('consequence');
         if (cons && node.startIndex >= cons.startIndex && node.endIndex <= cons.endIndex &&

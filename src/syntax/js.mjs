@@ -69,6 +69,19 @@ export const LITERAL_TYPES = new Set([
   'true', 'false', 'number', 'string', 'template_string', 'null', 'undefined', 'regex',
 ]);
 
+/**
+ * Is this node the body of a handler — the place a failure lands?
+ *
+ * DELIBERATELY NARROW HERE, and exactly equivalent to the `catch_clause` test
+ * that pathOf already makes while walking up. A promise handler,
+ * `.catch(e => ...)`, is a handler too, and widening this to include one would
+ * change which returns count as failure paths in every JavaScript project
+ * measured so far. That is a separate decision with its own measurement; this
+ * hook exists because Dart cannot answer the question by node type at all.
+ */
+export const isHandlerBody = node =>
+  node.type === 'statement_block' && !!node.parent && node.parent.type === 'catch_clause';
+
 export const BLOCK_TYPE = 'statement_block';
 
 /** Where the condition of an `if` is kept. Dart keeps it by position instead. */

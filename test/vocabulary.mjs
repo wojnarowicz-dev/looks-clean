@@ -590,6 +590,32 @@ check('a bare return is undefined', classify(null, JS).kind === 'ambiguous' &&
     named('handsOn').length === 1 && named('handsOn')[0].effects.rethrows,
     'rethrows=' + (named('handsOn')[0] || {}).effects?.rethrows);
 
+  // WHICH PATH A RETURN IS ON, asked of all three handler shapes. A Dart
+  // handler body is a SIBLING of its clause, so walking up from a return never
+  // meets a catch_clause and every one of these read as `normal` — the same
+  // code that JavaScript and Java both labelled `failure`. Rule 4 compares the
+  // failure path with the empty one, so on Dart it was comparing a function
+  // against itself and reported nothing on every project measured.
+  for (const name of ['plain', 'typed', 'untyped']) {
+    const fn = ir.functions.find(f => f.name === name);
+    const inCatch = fn && fn.returns.filter(r => r.path === 'failure');
+    check('dart path: a return inside `' + name + '` is on the failure path',
+      !!inCatch && inCatch.length === 1,
+      fn ? fn.returns.map(r => r.text + ':' + r.path).join('  ') : 'no function');
+  }
+
+  // AND THE GUARDED HALF MUST NOT MOVE WITH IT. A predicate that called the
+  // whole try a failure path would satisfy every line above and destroy the
+  // comparison rule 4 makes.
+  {
+    const fn = ir.functions.find(f => f.name === 'guarded');
+    const guardReturn = fn && fn.returns.find(r => r.guard);
+    const failureReturns = fn && fn.returns.filter(r => r.path === 'failure');
+    check('dart path: the guard above the try stays on the normal path',
+      !!guardReturn && guardReturn.path === 'normal' && failureReturns.length === 1,
+      fn ? fn.returns.map(r => r.text + ':' + r.path + (r.guard ? '(guard)' : '')).join('  ') : 'no function');
+  }
+
   // And the guard above the try is not the empty path.
   const guarded = ir.functions.find(f => f.name === 'guarded');
   check('a guard on an argument is marked as one',

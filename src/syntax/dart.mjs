@@ -77,6 +77,36 @@ export const LITERAL_TYPES = new Set([
 /** `throw` and `rethrow` are expressions here, which is why this is a table. */
 export const RETHROW_TYPES = new Set(['throw_expression', 'rethrow_expression']);
 
+/**
+ * THE QUESTION THIS LANGUAGE CANNOT ANSWER BY NODE TYPE.
+ *
+ * A handler body here is a SIBLING of its clause, not a child, so walking up
+ * from a `return` never meets a `catch_clause` — it meets a `block` whose
+ * parent is the `try`. Every return inside a Dart catch was therefore labelled
+ * `normal` while JavaScript and Java labelled the same code `failure`:
+ *
+ *   dart  true:normal  false:normal
+ *   java  true:normal  false:failure
+ *   js    true:normal  false:failure
+ *
+ * The child list is flat and the first block is the guarded part, so every
+ * LATER block that is a direct child of the try is a handler body — for all
+ * three spellings, including `on X { }`, which has no clause at all:
+ *
+ *   try <> block <> catch_clause <> block
+ *   try <> block <> on <> type_identifier <> catch_clause <> block
+ *   try <> block <> on <> type_identifier <> block
+ *
+ * A `finally` cannot be mistaken for one: the grammar wraps it in a
+ * `finally_clause` rather than leaving its block a direct child.
+ */
+export function isHandlerBody(node) {
+  const p = node.parent;
+  if (node.type !== 'block' || !p || p.type !== 'try_statement') return false;
+  const blocks = namedKids(p).filter(k => k.type === 'block');
+  return blocks.length > 1 && blocks[0].id !== node.id;
+}
+
 export const BLOCK_TYPE = 'block';
 export const isBlock = node => !!node && node.type === 'block';
 
