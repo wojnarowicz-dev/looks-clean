@@ -189,6 +189,66 @@ for (const c of precision.changeChecks || []) {
   }
 }
 
+// A LANGUAGE SAMPLE HAS THREE VERDICTS, so it has more ways to add up wrongly
+// than a two-verdict measurement. The tempting error here is not arithmetic: it
+// is moving a finding from `noise` to `deliberate` after the fact, which lowers
+// the number the threshold is checked against without anybody editing a total.
+// So the per-rule tallies and the cause tally are both held to the rows.
+for (const smp of precision.languageSamples || []) {
+  for (const [which, part] of [['random', smp.randomSample], ['first', smp.firstSample]]) {
+    const tag = smp.language + '/' + which;
+    const rows = part.findings;
+    const n = v => rows.filter(r => r.verdict === v).length;
+    check(tag + ': a row per checked finding',
+      rows.length === part.checked, rows.length + ' rows, ' + part.checked + ' declared');
+    check(tag + ': the three verdicts add up',
+      n('real') === part.real && n('deliberate') === part.deliberate && n('noise') === part.noise &&
+      part.real + part.deliberate + part.noise === part.checked,
+      part.real + ' real + ' + part.deliberate + ' deliberate + ' + part.noise + ' noise');
+
+    // Only noise names a cause, and only noise may. A cause on a finding that
+    // was judged real is the record disagreeing with itself.
+    const uncaused = rows.filter(r => r.verdict === 'noise' && !r.cause);
+    const overCaused = rows.filter(r => r.verdict !== 'noise' && r.cause);
+    check(tag + ': every false alarm names a cause, and only those',
+      uncaused.length === 0 && overCaused.length === 0,
+      uncaused.length ? 'uncaused: ' + uncaused[0].site
+        : overCaused.length ? 'caused but not noise: ' + overCaused[0].site
+          : Object.keys(part.causes).length + ' causes');
+    const tally = {};
+    for (const r of rows) if (r.cause) tally[r.cause] = (tally[r.cause] || 0) + 1;
+    const wrong = Object.keys(part.causes).filter(k => part.causes[k] !== (tally[k] || 0));
+    const undeclared = Object.keys(tally).filter(k => !(k in part.causes));
+    check(tag + ': the cause tally matches the rows',
+      wrong.length === 0 && undeclared.length === 0,
+      wrong.length ? wrong.join(', ') : undeclared.length ? 'undeclared: ' + undeclared.join(', ')
+        : part.noise + ' noise accounted for');
+
+    const byRule = {};
+    for (const r of rows) {
+      byRule[r.rule] = byRule[r.rule] || { checked: 0, real: 0, deliberate: 0, noise: 0 };
+      byRule[r.rule].checked++; byRule[r.rule][r.verdict]++;
+    }
+    const ruleMismatch = Object.keys({ ...byRule, ...part.perRule }).filter(k =>
+      !part.perRule[k] || !byRule[k] ||
+      ['checked', 'real', 'deliberate', 'noise'].some(f => part.perRule[k][f] !== byRule[k][f]));
+    check(tag + ': the per-rule tally matches the rows', ruleMismatch.length === 0,
+      ruleMismatch.length ? ruleMismatch.join(', ') : Object.keys(byRule).length + ' rules');
+
+    check(tag + ': nothing claims more checked than reported',
+      part.checked <= smp.reported, part.checked + ' of ' + smp.reported);
+  }
+
+  // The record says every false alarm came from ONE rule, and that sentence is
+  // the whole reason the correction is aimed at a rule instead of a dictionary.
+  // If a second rule ever starts producing noise, the conclusion has to be
+  // rewritten rather than reread.
+  const noisyRules = new Set([...smp.randomSample.findings, ...smp.firstSample.findings]
+    .filter(r => r.verdict === 'noise').map(r => r.rule));
+  check(smp.language + ': the false alarms come from the one rule the record blames',
+    noisyRules.size <= 1, [...noisyRules].join(', ') || 'none');
+}
+
 // THE TWO RUNS MUST STAY TWO RUNS. Collapsing them into one figure is the
 // tempting edit — it reads better and it is a lie about how the number was
 // arrived at.
