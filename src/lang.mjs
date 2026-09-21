@@ -87,8 +87,8 @@ const S = {
     en: 'No {0} files under {1}.',
     pl: 'Nie znalazlem plikow {0} w {1}.' },
   'noSourcesHint': {
-    en: '   This is NOT the same as "nothing found": there was nothing to read.\n   looks-clean reads .js .mjs .cjs .jsx .ts .mts .tsx and inline <script> in .html.',
-    pl: '   To NIE to samo, co "nic nie znalazlem": nie bylo czego czytac.\n   looks-clean czyta .js .mjs .cjs .jsx .ts .mts .tsx oraz <script> w .html.' },
+    en: '   This is NOT the same as "nothing found": there was nothing to read.\n   looks-clean reads .js .mjs .cjs .jsx .ts .mts .tsx .java and inline <script> in .html.',
+    pl: '   To NIE to samo, co "nic nie znalazlem": nie bylo czego czytac.\n   looks-clean czyta .js .mjs .cjs .jsx .ts .mts .tsx .java oraz <script> w .html.' },
   'noPopulation': {
     en: '{0} site(s) read, and not one peer group reached {1} members.',
     pl: 'Wczytalem {0} miejsc i zadna grupa sasiadow nie osiagnela {1} czlonkow.' },

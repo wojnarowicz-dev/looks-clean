@@ -14,19 +14,13 @@
 // is a small lie that costs a lot of trust.
 import { classify, normaliseText, unwrap } from './values.mjs';
 import { familyOf, timeoutMarker } from './reads.mjs';
+import * as JS from './syntax/js.mjs';
 
-const FUNCTION_TYPES = new Set([
-  'function_declaration', 'function_expression', 'function',
-  'generator_function', 'generator_function_declaration',
-  'arrow_function', 'method_definition',
-]);
-
-const STATEMENT_TYPES = new Set([
-  'expression_statement', 'lexical_declaration', 'variable_declaration',
-  'return_statement', 'if_statement', 'for_statement', 'for_in_statement',
-  'while_statement', 'do_statement', 'throw_statement', 'switch_statement',
-  'try_statement', 'labeled_statement', 'public_field_definition',
-]);
+// WHICH NODE IS WHAT — this lived here and has moved to src/syntax/.
+// This module asks the questions ("is this a call", "what does this clause
+// handle"); one language's vocabulary answers them. While the answers were
+// written in here, every one of them was spelled in JavaScript's node types,
+// and another language got "no" to all of them — silently, as an empty result.
 
 // A call that leaves a trace someone can find afterwards.
 const TRACE_HEAD = /console\.|logger|Sentry|rollbar|bugsnag|datadog|winston|pino/i;
@@ -42,69 +36,19 @@ function walk(node, fn) {
 }
 
 /** The nearest enclosing statement, so a read can be judged with its context. */
-function enclosingStatement(node) {
+function enclosingStatement(node, syn) {
   let n = node;
-  while (n && !STATEMENT_TYPES.has(n.type)) n = n.parent;
+  while (n && !syn.STATEMENT_TYPES.has(n.type)) n = n.parent;
   return n || node;
 }
 
-/** The head of a call chain: `sb.from('x').select('y')` -> `sb`. */
-function chainHead(callNode) {
-  let n = callNode;
-  for (let i = 0; n && i < 40; i++) {
-    if (n.type === 'call_expression') { n = n.childForFieldName('function'); continue; }
-    if (n.type === 'member_expression') { n = n.childForFieldName('object'); continue; }
-    if (n.type === 'await_expression' || n.type === 'parenthesized_expression' ||
-      n.type === 'non_null_expression') { n = n.namedChild(0); continue; }
-    break;
-  }
-  return n ? n.text : '';
-}
-
-/** `sb.from('x').select('y')` -> `sb.from.select`, with the arguments dropped. */
-function calleeText(callNode) {
-  const f = callNode.childForFieldName('function');
-  if (!f) return '';
-  return normaliseText(f.text).replace(/\([^()]*\)/g, '').replace(/\[[^\]]*\]/g, '');
-}
-
-/**
- * A readable name for a function, for the report and for the fingerprint.
- * An anonymous callback takes the name of what it was passed to, so
- * `.catch(function () { ... })` is reported as `catch callback of sb.rpc`
- * rather than as `<anonymous>` — which is not an identity anybody can look up.
- */
-function functionName(node) {
-  const own = node.childForFieldName ? node.childForFieldName('name') : null;
-  if (own) return own.text;
-  const p = node.parent;
-  if (!p) return '<anonymous>';
-  if (p.type === 'variable_declarator') {
-    const n = p.childForFieldName('name');
-    if (n) return n.text;
-  }
-  if (p.type === 'pair') {
-    const k = p.childForFieldName('key');
-    if (k) return k.text.replace(/['"`]/g, '');
-  }
-  if (p.type === 'assignment_expression') {
-    const l = p.childForFieldName('left');
-    if (l) return normaliseText(l.text);
-  }
-  if (p.type === 'arguments' && p.parent && p.parent.type === 'call_expression') {
-    return calleeText(p.parent) + '()';
-  }
-  return '<anonymous>';
-}
-
 /** The names an `if` condition tests for failure, or null when it tests nothing of the sort. */
-function errorNamesInCondition(cond) {
+function errorNamesInCondition(cond, syn) {
   if (!cond) return null;
   const names = [];
   let sawNegatedOk = false;
   walk(cond, n => {
-    if (n.type === 'identifier' || n.type === 'property_identifier' ||
-      n.type === 'shorthand_property_identifier') {
+    if (syn.IDENT_TYPES.has(n.type)) {
       if (ERROR_NAME.test(n.text)) names.push(n.text);
     }
   });
@@ -122,8 +66,9 @@ function errorNamesInCondition(cond) {
  * @param tree   a tree-sitter tree
  * @param file   the path reported to the reader (already relative)
  * @param off    line offset, non-zero only for inline <script>
+ * @param syn    the node vocabulary of this file's language, from src/syntax/
  */
-export function analyse(tree, file, off = 0) {
+export function analyse(tree, file, off = 0, syn = JS) {
   const root = tree.rootNode;
   const functions = [];
   const handlers = [];
@@ -137,11 +82,11 @@ export function analyse(tree, file, off = 0) {
 
   const descend = (node) => {
     let pushed = false;
-    if (FUNCTION_TYPES.has(node.type)) {
+    if (syn.FUNCTION_TYPES.has(node.type)) {
       const rec = {
         id: file + '#' + (nextId++),
         file,
-        name: functionName(node),
+        name: syn.functionNameOf(node),
         type: node.type,
         line: rowOf(node, off),
         endLine: node.endPosition.row + 1 + off,
@@ -168,11 +113,11 @@ export function analyse(tree, file, off = 0) {
     const fn = enclosingFn();
 
     // ---- reads
-    if (node.type === 'call_expression') {
-      const callee = calleeText(node);
-      const fam = familyOf(callee, chainHead(node));
+    if (syn.isCall(node)) {
+      const callee = syn.calleeText(node);
+      const fam = familyOf(callee, syn.chainHead(node));
       if (fam) {
-        const stmt = enclosingStatement(node);
+        const stmt = enclosingStatement(node, syn);
         reads.push({
           file,
           line: rowOf(node, off),
@@ -190,47 +135,21 @@ export function analyse(tree, file, off = 0) {
     }
 
     // ---- catch clause
-    if (node.type === 'catch_clause') {
-      const param = node.childForFieldName('parameter');
-      const body = node.childForFieldName('body') || node.namedChild(node.namedChildCount - 1);
-      const tryStmt = node.parent;
-      const tryBlock = tryStmt && tryStmt.type === 'try_statement'
-        ? tryStmt.childForFieldName('body') : null;
-      handlers.push(makeHandler({
-        kind: 'catch',
-        node, body, param, fn,
-        guardedFrom: tryBlock ? tryBlock.startIndex : node.startIndex,
-        guardedTo: tryBlock ? tryBlock.endIndex : node.startIndex,
-        opNode: null,
-      }));
+    {
+      const site = syn.catchSiteOf(node);
+      if (site) handlers.push(makeHandler({ kind: 'catch', node, fn, opNode: null, ...site }));
     }
 
     // ---- .catch(callback)
-    if (node.type === 'call_expression') {
-      const f = node.childForFieldName('function');
-      if (f && f.type === 'member_expression') {
-        const prop = f.childForFieldName('property');
-        if (prop && prop.text === 'catch') {
-          const args = node.childForFieldName('arguments');
-          const cb = args && args.namedChildCount ? args.namedChild(0) : null;
-          if (cb && FUNCTION_TYPES.has(cb.type)) {
-            const receiver = f.childForFieldName('object');
-            handlers.push(makeHandler({
-              kind: 'promise-catch',
-              node, body: bodyOf(cb), param: firstParam(cb), fn,
-              guardedFrom: receiver ? receiver.startIndex : node.startIndex,
-              guardedTo: receiver ? receiver.endIndex : node.startIndex,
-              opNode: receiver,
-            }));
-          }
-        }
-      }
+    {
+      const site = syn.promiseCatchOf(node);
+      if (site) handlers.push(makeHandler({ kind: 'promise-catch', node, fn, ...site }));
     }
 
     // ---- if (error) { ... }
     if (node.type === 'if_statement') {
       const cond = node.childForFieldName('condition');
-      const names = errorNamesInCondition(cond);
+      const names = errorNamesInCondition(cond, syn);
       if (names) {
         const cons = node.childForFieldName('consequence');
         if (cons) {
@@ -252,19 +171,9 @@ export function analyse(tree, file, off = 0) {
     }
   }
 
-  function bodyOf(fnNode) {
-    return fnNode.childForFieldName('body') || fnNode.namedChild(fnNode.namedChildCount - 1);
-  }
-  function firstParam(fnNode) {
-    const p = fnNode.childForFieldName('parameter') || fnNode.childForFieldName('parameters');
-    if (!p) return null;
-    if (p.type === 'identifier') return p;
-    return p.namedChildCount ? p.namedChild(0) : null;
-  }
-
   // ------------------------------------------------------------ handlers
   function makeHandler({ kind, node, body, param, fn, guardedFrom, guardedTo, opNode, errorNames }) {
-    const binding = param ? normaliseText(param.text).replace(/:.*$/, '') : null;
+    const binding = param ? syn.bindingText(param) : null;
     const effects = handlerEffects(body, binding);
     return {
       file,
@@ -312,11 +221,11 @@ export function analyse(tree, file, off = 0) {
 
     walk(body, n => {
       if (n.type === 'comment') return;
-      if (STATEMENT_TYPES.has(n.type)) { e.statements++; e.empty = false; }
+      if (syn.STATEMENT_TYPES.has(n.type)) { e.statements++; e.empty = false; }
       if (n.type === 'identifier' && binding && n.text === binding) e.usesBinding = true;
       if (n.type === 'throw_statement') e.rethrows = true;
-      if (n.type === 'call_expression') {
-        const c = calleeText(n);
+      if (syn.isCall(n)) {
+        const c = syn.calleeText(n);
         const tail = c.split('.').pop();
         if (TRACE_HEAD.test(c) || TRACE_TAIL.test(tail) || TRACE_SETTER.test(tail)) e.logs = true;
         if (/^(Promise\.reject|reject)$/.test(c)) e.rethrows = true;
@@ -330,14 +239,14 @@ export function analyse(tree, file, off = 0) {
     // An expression-bodied arrow (`() => []`) has no statement node at all, and
     // counting it as empty would report every one of them under rule 1 — which
     // is rule 2's business, not rule 1's.
-    if (e.statements === 0 && body.type !== 'statement_block') e.empty = false;
+    if (e.statements === 0 && !syn.isBlock(body)) e.empty = false;
     return e;
   }
 
   /** What the handler hands back: the value, and whether it names its own outcome. */
   function handlerAnswer(body, offset) {
     if (!body) return null;
-    if (body.type !== 'statement_block') {
+    if (!syn.isBlock(body)) {
       const c = classify(body);
       return { ...c, line: rowOf(body, offset), text: normaliseText(unwrap(body).text).slice(0, 80) };
     }
@@ -407,17 +316,13 @@ export function analyse(tree, file, off = 0) {
       if (n.type === 'if_statement') {
         const cons = n.childForFieldName('consequence');
         if (cons && node.startIndex >= cons.startIndex && node.endIndex <= cons.endIndex &&
-          errorNamesInCondition(n.childForFieldName('condition'))) return 'failure';
+          errorNamesInCondition(n.childForFieldName('condition'), syn)) return 'failure';
       }
       n = n.parent;
     }
     // A `.catch()` callback has no normal path at all: everything it returns is
     // an answer to a failure.
-    if (fn) {
-      const p = fn.node.parent;
-      if (p && p.type === 'arguments' && p.parent && p.parent.type === 'call_expression' &&
-        /\.catch$/.test(calleeText(p.parent))) return 'failure';
-    }
+    if (fn && syn.isFailureOnlyCallback(fn.node)) return 'failure';
     return 'normal';
   }
 
@@ -448,9 +353,8 @@ export function analyse(tree, file, off = 0) {
   // An expression-bodied arrow returns without a return_statement. Adding it
   // here rather than in the walk keeps `descend` about structure only.
   for (const fn of functions) {
-    if (fn.type !== 'arrow_function') continue;
-    const body = fn.node.childForFieldName('body');
-    if (!body || body.type === 'statement_block') continue;
+    const body = syn.expressionBody(fn.node);
+    if (!body) continue;
     fn.returns.push(makeReturn(body, body, fn));
   }
 

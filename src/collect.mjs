@@ -13,11 +13,11 @@
 // the NEWLINES ARE KEPT, or every line number in the report drifts.
 import fs from 'node:fs';
 import path from 'node:path';
-import { parserFor } from './parser.mjs';
+import { parserFor, syntaxFor } from './parser.mjs';
 import { tryReadSource } from './input.mjs';
 import { analyse } from './ir.mjs';
 
-const SCRIPT_EXT = /\.(js|mjs|cjs|jsx|ts|mts|cts|tsx)$/i;
+const SCRIPT_EXT = /\.(js|mjs|cjs|jsx|ts|mts|cts|tsx|java)$/i;
 const HTML_EXT = /\.html?$/i;
 
 // HOW MUCH WAS NOT READ, AND UNDER WHICH RULE.
@@ -207,7 +207,7 @@ export async function readProject(files, root, { includeGenerated = false } = {}
     filesRead++;
     const parser = await parserFor(f);
     const tree = parser.parse(src);
-    const ir = analyse(tree, rel(f), 0);
+    const ir = analyse(tree, rel(f), 0, syntaxFor(f));
     if (ir.hasParseError) parseErrors.push(rel(f));
     all.functions.push(...ir.functions);
     all.handlers.push(...ir.handlers);

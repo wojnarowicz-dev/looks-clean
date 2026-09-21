@@ -52,7 +52,7 @@ const cfg = loadConfig(argv, ROOT);
 // ------------------------------------------------------------------ read
 const files = collectFiles(ROOT, cfg);
 {
-  const missing = noSourcesIn(files.script.length + files.html.length, '.js/.ts/.html', ROOT);
+  const missing = noSourcesIn(files.script.length + files.html.length, '.js/.ts/.java/.html', ROOT);
   if (missing) {
     console.log(t('scanTitle'));
     console.log(t('root') + ROOT);
