@@ -266,9 +266,24 @@ Dwie przyczyny, obie w regule 4:
   Dwa zgłoszenia mówiły, że metoda zwraca `undefined` na obu ścieżkach — co robi
   każda metoda `void`.
 
-Obie są naprawione w 0.2.1, na świeżym materiale, a nie na tym, który je znalazł
-— naprawianie detektora pod jego własny test i ponowny pomiar to sposób, w jaki
-liczba trafności staje się bezwartościowa.
+**Obie są naprawione w 0.2.1**, i zmierzone na dwóch korpusach, nie na jednym. Na
+dwudziestu jeden plikach, z których pochodziły fałszywe alarmy, reguła 4 zeszła
+z 14 zgłoszeń na 8; na pozostałych dziewięćdziesięciu sześciu plikach tego samego
+drzewa — z których nie czytano tu żadnego werdyktu — z 37 na 27. JavaScript nie
+drgnął wcale.
+
+Poprawkę zestawiono z już zapisanymi werdyktami, jeden po drugim: z sześciu
+zgłoszeń reguły 4 ocenionych jako prawdziwe **nie usunięto żadnego**; z siedmiu
+ocenionych jako fałszywe — sześć. Siódme zachowało zgłoszenie i przeczepiło się
+na prawdziwą ścieżkę pustki niżej w tej samej metodzie, więc przestało być
+fałszywym alarmem, zamiast zniknąć. Poprawka, która ucisza zamiast celować,
+wyszłaby właśnie tam.
+
+**Nic z tego nie jest twierdzeniem, że trafność wzrosła.** Sześć fałszywych
+alarmów z czternastu opuściło korpus, a pozostałych ośmiu nikt nie przeczytał na
+nowo. Liczby w tabeli wyżej zmierzono wobec narzędzia w stanie z 2026-09-21 i
+zostają przy tej dacie, a nie są korygowane; liczba dla 0.2.1 wymaga świeżej
+próbki, ocenionej tak samo, i takiej nie zrobiono.
 
 **Ani jeden fałszywy alarm nie wyszedł z tablic.** Żadnej złej rodziny, żadnej
 złej wartości dwuznacznej, żadnego odczytu, który odczytem nie jest. Tablica

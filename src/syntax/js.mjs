@@ -84,6 +84,50 @@ export const valueKey = node => normaliseText(node.text);
 /** Every JavaScript wrapper puts the value it wraps first. */
 export const unwrapChild = node => node.namedChild(0);
 
+// ------------------------------------------------------------- preconditions
+//
+// A GUARD ON AN ARGUMENT IS NOT AN EMPTY RESULT. `if (x == null) return null`
+// answers a caller who asked a malformed question; it is not this function
+// looking and finding nothing. Rule 4 collided the two and reported a collapse
+// in functions that had carefully avoided one.
+//
+// Two halves decide it, and the first is the one that does the work: the
+// condition may mention NOTHING but the function's own parameters. A test on a
+// local or on a method of `this` is a statement about what the function found.
+
+/** The names this function binds as parameters. */
+export function parameterNames(fnNode) {
+  const out = new Set();
+  const p = fnNode.childForFieldName('parameters') || fnNode.childForFieldName('parameter');
+  if (!p) return out;
+  if (p.type === 'identifier') { out.add(p.text); return out; }
+  const walk = node => {
+    if (node.type === 'identifier' || node.type === 'shorthand_property_identifier_pattern')
+      out.add(node.text);
+    for (let i = 0; i < node.namedChildCount; i++) walk(node.namedChild(i));
+  };
+  walk(p);
+  return out;
+}
+
+/** Names a precondition may mention besides the parameters themselves. */
+export const PRECONDITION_NAMES = new Set(['length', 'trim']);
+
+/**
+ * Spellings of "this argument is absent", one operand at a time.
+ * `x != null` is deliberately not here: that is a test for PRESENCE.
+ */
+export const ABSENCE_TESTS = [
+  ['== null', /^\w+===?null$/],
+  ['null ==', /^null===?\w+$/],
+  ['== undefined', /^\w+===?undefined$/],
+  ['falsy', /^!\w+$/],
+  ['empty string', /^\w+===?(''|"")$/],
+  ['length 0', /^\w+\.length===?0$/],
+  ['no length', /^!\w+\.length$/],
+  ['trimmed empty', /^\w+\.trim\(\)===?(''|"")$/],
+];
+
 /** `sb.from('x').select('y')` -> `sb.from.select`, with the arguments dropped. */
 export function calleeText(callNode) {
   const f = callNode.childForFieldName('function');

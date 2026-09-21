@@ -264,9 +264,23 @@ Two causes, both in rule 4:
   reported a method for returning `undefined` on both paths, which every `void`
   method does.
 
-Both are fixed in 0.2.1, on fresh material rather than on the material that
-found them — repairing a detector against its own test and re-running is how a
-precision number becomes worthless.
+**Both are fixed in 0.2.1**, and measured on two corpora rather than one. On the
+twenty-one files the false alarms came from, rule 4 went from 14 findings to 8;
+on the other ninety-six files of the same tree — which no verdict on this page
+was ever read from — from 37 to 27. JavaScript did not move at all.
+
+The correction was checked against the verdicts already recorded, one by one:
+of the six rule 4 findings judged real, **none** was removed; of the seven judged
+false, six were. The seventh kept its finding and re-anchored onto a real empty
+path further down the same method, so it stopped being a false alarm rather than
+disappearing. A correction that quietened rather than aimed would have shown up
+there.
+
+**None of which is a claim that precision improved.** Six false alarms out of
+fourteen left the corpus and the eight that remain have not been read again. The
+numbers in the table above were measured against the tool as it stood on
+2026-09-21 and are kept at that date rather than adjusted; a figure for 0.2.1
+needs a fresh sample, judged the same way, and none has been taken.
 
 **Not one false alarm came from the tables.** No wrong family, no wrong
 ambiguous value, no read that was not a read. The read table for Java was

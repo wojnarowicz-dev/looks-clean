@@ -219,6 +219,63 @@ for (const stmt of UNGUARDED) {
   check('no deadline: ' + stmt.slice(0, 40), got === null, got === null ? '' : 'seen as ' + got);
 }
 
+// ------------------------------------------------- 3. preconditions
+//
+// The fourth table: which operand spells "this argument is absent". It decides
+// whether a `return` above the try is the empty path or a guard on the question,
+// and rule 4 collided the two until 0.2.1. A row that stops matching here goes
+// straight back to reporting methods that never collapsed anything.
+//
+// The PRESENCE rows are the half that matters. `x != null` differs from
+// `x == null` by one character and means the opposite, and a regex written in a
+// hurry takes both.
+const ABSENT = [
+  ['js', 'x===null', '== null'],
+  ['js', 'x==null', '== null'],
+  ['js', 'null===x', 'null =='],
+  ['js', 'x===undefined', '== undefined'],
+  ['js', '!x', 'falsy'],
+  ['js', "x===''", 'empty string'],
+  ['js', 'x.length===0', 'length 0'],
+  ['js', '!x.length', 'no length'],
+  ['js', "x.trim()===''", 'trimmed empty'],
+  ['java', 'x==null', '== null'],
+  ['java', 'null==x', 'null =='],
+  ['java', 'x.isEmpty()', 'isEmpty()'],
+  ['java', 'x.isBlank()', 'isBlank()'],
+  ['java', 'x.trim().isEmpty()', 'trimmed empty'],
+  ['java', 'x.length()==0', 'length 0'],
+];
+
+const NOT_ABSENT = [
+  ['js', 'x!==null', 'a test for PRESENCE, and one character from its opposite'],
+  ['js', 'x', 'a truthiness test, not an absence test'],
+  ['js', 'x.length>0', 'the other direction'],
+  ['java', 'x!=null', 'a test for PRESENCE'],
+  ['java', 'x.isPresent()', 'the opposite of empty'],
+  ['java', 'x.size()<4', 'a size the caller chose, not an absence'],
+  ['java', 'x.exists()', 'a question about the disk, not about the argument'],
+];
+
+for (const [lang, operand, label] of ABSENT) {
+  const syn = lang === 'js' ? JS : JAVA;
+  const hit = syn.ABSENCE_TESTS.find(([, re]) => re.test(operand));
+  check(lang + ' absent: ' + operand, !!hit && hit[0] === label,
+    hit ? 'matched ' + hit[0] : 'matched nothing');
+}
+for (const [lang, operand, why] of NOT_ABSENT) {
+  const syn = lang === 'js' ? JS : JAVA;
+  const hit = syn.ABSENCE_TESTS.find(([, re]) => re.test(operand));
+  check(lang + ' not absent: ' + operand, !hit, hit ? 'matched ' + hit[0] : why.slice(0, 44));
+}
+
+for (const [label, syn] of [['js', JS], ['java', JAVA]]) {
+  const covered = new Set(ABSENT.filter(r => r[0] === label).map(r => r[2]));
+  const unexercised = syn.ABSENCE_TESTS.map(([n]) => n).filter(n => !covered.has(n));
+  check('every ' + label + ' absence test has an example', unexercised.length === 0,
+    unexercised.length ? 'unexercised: ' + unexercised.join(', ') : covered.size + ' spellings');
+}
+
 // ---------------------------------------------------------------- 3. answers
 const parser = await parserFor('vocabulary.ts');
 const javaParser = await parserFor('Vocabulary.java');

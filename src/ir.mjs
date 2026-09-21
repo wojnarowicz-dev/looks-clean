@@ -29,6 +29,18 @@ const ERROR_NAME = /(^|_|\b)(err|error|exception|failure|failed)|((Err|Error|Exc
 
 const rowOf = (node, off) => node.startPosition.row + 1 + off;
 
+/** Strips the parentheses an `if` condition carries in both grammars. */
+function unparenthesise(text) {
+  let t = text;
+  const balanced = s => {
+    let d = 0;
+    for (const c of s) { if (c === '(') d++; else if (c === ')') d--; if (d < 0) return false; }
+    return d === 0;
+  };
+  while (t.startsWith('(') && t.endsWith(')') && balanced(t.slice(1, -1))) t = t.slice(1, -1);
+  return t;
+}
+
 function walk(node, fn) {
   fn(node);
   for (let i = 0; i < node.childCount; i++) walk(node.child(i), fn);
@@ -304,11 +316,56 @@ export function analyse(tree, file, off = 0, syn) {
    * empty, and refusing to see that would leave the rule firing only on code
    * simple enough not to need it.
    */
+  /**
+   * A RETURN THAT ANSWERS A MALFORMED QUESTION, not an empty result.
+   *
+   * `if (mediaSourcesTxt == null) return null` has not looked at anything yet,
+   * so it cannot be the path where this function looked and found nothing. Rule
+   * 4 collided it with a catch answering the same null and reported a collapse
+   * in methods whose javadoc documented the deliberate split it was accusing
+   * them of losing. Five of the six false alarms in the first sample of
+   * test/precision.json are this one shape.
+   *
+   * THE CONDITION MUST MENTION NOTHING BUT PARAMETERS, and that half is what
+   * does the work. `if (resumePath == null)` on a local read out of a config is
+   * a statement about what this function found, and stays an empty path.
+   */
+  function isPrecondition(node, fn) {
+    if (!fn) return false;
+    if (fn.params === undefined) fn.params = syn.parameterNames(fn.node);
+    if (!fn.params.size) return false;
+
+    let n = node.parent;
+    let cond = null;
+    while (n && n !== fn.node) {
+      if (n.type === 'if_statement') {
+        const cons = n.childForFieldName('consequence');
+        if (cons && node.startIndex >= cons.startIndex && node.endIndex <= cons.endIndex) {
+          cond = n.childForFieldName('condition');
+          break;
+        }
+      }
+      n = n.parent;
+    }
+    if (!cond) return false;
+
+    let onlyParams = true;
+    walk(cond, x => {
+      if (!onlyParams || !syn.IDENT_TYPES.has(x.type)) return;
+      if (!fn.params.has(x.text) && !syn.PRECONDITION_NAMES.has(x.text)) onlyParams = false;
+    });
+    if (!onlyParams) return false;
+
+    return unparenthesise(normaliseText(cond.text)).split('||')
+      .every(operand => syn.ABSENCE_TESTS.some(([, re]) => re.test(operand)));
+  }
+
   function makeReturn(node, value, fn) {
     const c = classify(value, syn);
     return {
       line: rowOf(node, off),
       path: pathOf(node, fn),
+      guard: isPrecondition(node, fn),
       kind: c.kind,
       value: c.value,
       potential: potentialEmpty(value),
@@ -365,6 +422,14 @@ export function analyse(tree, file, off = 0, syn) {
     if (!body) continue;
     fn.returns.push(makeReturn(body, body, fn));
   }
+
+  // A FUNCTION THAT ANSWERS NOTHING CANNOT ANSWER THE SAME THING TWICE. Every
+  // return of a void method is `undefined`, so its failure path and its empty
+  // path are identical by construction and saying so is vacuous. Rule 4
+  // reported two of them; one really is a defect, and rule 1 is the rule that
+  // can say so.
+  for (const fn of functions)
+    fn.answerless = fn.returns.length > 0 && fn.returns.every(r => r.text === 'undefined');
 
   // ------------------------------------------------------------ handler families
   // Which read was this handler handling? Answered from the read list rather

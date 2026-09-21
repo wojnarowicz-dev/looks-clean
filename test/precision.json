@@ -782,6 +782,101 @@
         }
       ],
       "notMeasured": "Whether the seven Java attributions that moved are each right was checked by reading two of them, not all seven. The Java precision sample taken before 0.2.0 reads findings, and these sit underneath findings."
+    },
+    {
+      "id": "2026-09-21-rule-4-stops-reading-guards-and-void",
+      "date": "2026-09-21",
+      "change": "Rule 4 no longer treats a guard on an argument as the empty path, and no longer speaks about a function that has no answer to give.",
+      "why": "Both were measured, not suspected. Every false alarm in the Java sample came from rule 4 and from these two shapes: five of the six in the first twenty were a parameter guard colliding with a catch, and two were a void method whose returns are identical by construction.",
+      "method": "Both recorded measurements' JavaScript material at the revisions they name, before and after, compared finding by finding including label. Java measured on two corpora: the 21 files the false alarms were found in, and the other 96 files of the same tree, which no verdict in this file was ever read from.",
+      "comparedOn": [
+        "id",
+        "file",
+        "line",
+        "rule",
+        "layerKind",
+        "peers",
+        "safe",
+        "label"
+      ],
+      "findingsBefore": 77,
+      "findingsAfter": 77,
+      "identical": true,
+      "verdict": "No JavaScript finding changed. Rule 4 fires once in the six projects and the correction does not touch it.",
+      "oneNumberMoved": "uptime-kuma counted 619 sites passed over before and 613 after. Six functions whose only normal exit was a guard leave rule 4's contest altogether, so they are no longer counted as passed over. No finding moved with them.",
+      "rule4ByCorpus": [
+        {
+          "corpus": "six JavaScript projects",
+          "before": 1,
+          "after": 1,
+          "removed": 0
+        },
+        {
+          "corpus": "own fixtures, golden config",
+          "before": 1,
+          "after": 1,
+          "removed": 0
+        },
+        {
+          "corpus": "java, the 21 files the false alarms came from",
+          "before": 14,
+          "after": 8,
+          "removed": 6
+        },
+        {
+          "corpus": "java, the other 96 files of the same tree",
+          "before": 37,
+          "after": 27,
+          "removed": 10
+        }
+      ],
+      "aimedRatherThanQuietened": "The correction was checked against the verdicts already recorded in languageSamples, one by one. Of the SIX rule-4 findings judged real, none was removed. Of the SEVEN judged noise, six were removed. The seventh (J-14) keeps its finding and re-anchors onto a real empty path further down the same method — the slot it genuinely failed to find — so it stops being a false alarm rather than disappearing. A correction that removed a real finding, or that removed the seventh by silencing it, would have shown up here.",
+      "whatThisDoesNotShow": "That precision improved. Six false alarms out of fourteen left the Java corpus, and the eight that remain have not been read again. The sample in languageSamples was taken against the tool as it stood on 2026-09-21 and is kept at that date rather than adjusted; a number for 0.2.1 needs a fresh sample, judged the same way, which has not been taken.",
+      "negativeFixture": "test/fixtures/clean/Preconditions.java holds all three shapes beside three neighbours that make the silence mean something: it reports three findings without the correction and none with it. A negative fixture that is quiet because nothing in it was comparable proves nothing, so the peer group reaches minpop and a convention exists.",
+      "projects": [
+        {
+          "name": "got",
+          "revision": "687eb7dcc100ea3e548ebba227173b886789e670",
+          "findingsBefore": 9,
+          "findingsAfter": 9,
+          "identical": true
+        },
+        {
+          "name": "uptime-kuma",
+          "revision": "d4fb7f38d77c09e266a859178940c0b9d88d0594",
+          "findingsBefore": 28,
+          "findingsAfter": 28,
+          "identical": true
+        },
+        {
+          "name": "eslint",
+          "revision": "c8326608e710e670beaf982501aed80ea104919a",
+          "findingsBefore": 13,
+          "findingsAfter": 13,
+          "identical": true
+        },
+        {
+          "name": "node-red",
+          "revision": "d5d883d",
+          "findingsBefore": 0,
+          "findingsAfter": 0,
+          "identical": true
+        },
+        {
+          "name": "verdaccio",
+          "revision": "b27212f",
+          "findingsBefore": 27,
+          "findingsAfter": 27,
+          "identical": true
+        },
+        {
+          "name": "fastify",
+          "revision": "ac28821",
+          "findingsBefore": 0,
+          "findingsAfter": 0,
+          "identical": true
+        }
+      ]
     }
   ],
   "_languageSamples": "A precision sample taken when a new language is added, before the version that claims to support it ships. Three verdicts, not two: a site can be a defect, a deliberate and defensible choice, or a finding the tool should not have made. Only the last is noise.",

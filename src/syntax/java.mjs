@@ -109,6 +109,52 @@ export const OUTCOME_TAIL = true;
 export const unwrapChild = node =>
   node.childForFieldName('value') || node.namedChild(node.namedChildCount - 1);
 
+// ------------------------------------------------------------- preconditions
+//
+// See js.mjs for what a precondition is and why it is not an empty result.
+// THE NAME IS IN A FIELD, NOT IN A POSITION: a Java formal parameter carries
+// its type as an identifier too, so reading the identifiers of the parameter
+// list by position would admit `Path` and `String` as parameter names and let
+// any condition mentioning a type count as a guard.
+
+/** The names this method or lambda binds as parameters. */
+export function parameterNames(fnNode) {
+  const out = new Set();
+  const p = fnNode.childForFieldName('parameters');
+  if (!p) return out;
+  if (p.type === 'identifier') { out.add(p.text); return out; }   // `e -> ...`
+  const walk = node => {
+    const nm = node.childForFieldName ? node.childForFieldName('name') : null;
+    if (nm && nm.type === 'identifier') out.add(nm.text);
+    for (let i = 0; i < node.namedChildCount; i++) walk(node.namedChild(i));
+  };
+  walk(p);
+  // An inferred lambda list (`(a, b) -> ...`) has no `name` field to read.
+  if (!out.size) {
+    for (let i = 0; i < p.namedChildCount; i++)
+      if (p.namedChild(i).type === 'identifier') out.add(p.namedChild(i).text);
+  }
+  return out;
+}
+
+export const PRECONDITION_NAMES = new Set(['isEmpty', 'isBlank', 'trim', 'length']);
+
+/**
+ * `x.isBlank()` on a parameter is a precondition, not an empty result: it says
+ * the caller handed over nothing to work with. The same call on a COLLECTION
+ * would be a real "found nothing" — that shape did not occur in 133 Java files,
+ * and test/fixtures/clean pins the String case so the distinction is not
+ * re-litigated from memory.
+ */
+export const ABSENCE_TESTS = [
+  ['== null', /^\w+==null$/],
+  ['null ==', /^null==\w+$/],
+  ['isEmpty()', /^\w+\.isEmpty\(\)$/],
+  ['isBlank()', /^\w+\.isBlank\(\)$/],
+  ['trimmed empty', /^\w+\.trim\(\)\.(isEmpty|isBlank)\(\)$/],
+  ['length 0', /^\w+\.length\(\)==0$/],
+];
+
 function objectText(node) {
   if (node.type === 'method_invocation') return calleeText(node);
   return strip(node.text);

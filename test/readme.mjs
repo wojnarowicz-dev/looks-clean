@@ -177,6 +177,14 @@ for (const c of precision.changeChecks || []) {
   // not contradicted by a non-zero count — a changed attribution that reported
   // nothing either way is exactly what happened here — but the count must be
   // declared rather than left to be assumed zero.
+  // A per-corpus count of what a correction removed has to subtract correctly.
+  // It is the one line of this record somebody would edit to make a correction
+  // look larger than it was.
+  for (const row of c.rule4ByCorpus || []) {
+    check(tag + ': ' + row.corpus.slice(0, 30) + ' subtracts',
+      row.before - row.after === row.removed && row.after <= row.before,
+      row.before + ' - ' + row.removed + ' = ' + row.after);
+  }
   if (c.projects.some(p => 'attributionsMoved' in p)) {
     const undeclared = c.projects.filter(p => !('attributionsMoved' in p && 'handlersOverARead' in p));
     const impossible = c.projects.filter(p => p.attributionsMoved > p.handlersOverARead);

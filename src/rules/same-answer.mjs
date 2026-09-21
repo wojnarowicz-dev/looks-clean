@@ -50,12 +50,17 @@ function failureReturns(fn, byParent) {
   return [...own, ...nested];
 }
 
+// A precondition is not the empty path — see ir.mjs. Dropping it here rather
+// than at the collision keeps a function whose ONLY normal exit is a guard out
+// of the contest altogether, so it is not quoted back as a well-behaved
+// neighbour either.
 function normalReturns(fn) {
-  return fn.returns.filter(r => r.path === 'normal');
+  return fn.returns.filter(r => r.path === 'normal' && !r.guard);
 }
 
 /** The collision, or null: a value answered on both paths. */
 function collision(fn, byParent) {
+  if (fn.answerless) return null;
   const fails = failureReturns(fn, byParent).filter(r => r.kind === 'ambiguous');
   if (!fails.length) return null;
   const normals = normalReturns(fn).filter(r => r.potential);
