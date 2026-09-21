@@ -35,7 +35,7 @@ on this page works the same way with `npx looks-clean` in front of it.
 <!-- lc:claim name=layers value=10 -->
 <!-- lc:claim name=knownAnswers value=7 -->
 <!-- lc:claim name=knownAnswersInScope value=6 -->
-<!-- lc:claim name=families value=8 -->
+<!-- lc:claim name=families value=9 -->
 <!-- lc:claim name=languages value=2 -->
 <!-- lc:claim name=messages value=140 -->
 <!-- lc:claim name=fixtureFindings value=7 -->
@@ -451,10 +451,10 @@ problem.
 ## The layer
 
 Two sites are neighbours when they are **in the same place** and belong to the
-**same family of operation** — supabase, net, db, proc, fs, parse, storage or a
-dynamic import. Both halves matter: `saveDream` and `saveProfile` in one service
-file are written by the same hand under the same constraints, and a `fetch` is
-not comparable with a `JSON.parse`.
+**same family of operation** — supabase, net, db, proc, fs, parse, storage,
+assets or a dynamic import. Both halves matter: `saveDream` and `saveProfile`
+in one service file are written by the same hand under the same constraints,
+and a `fetch` is not comparable with a `JSON.parse`.
 
 The layer climbs a ladder when a group is too small to speak:
 

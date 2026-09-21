@@ -87,20 +87,56 @@ const JAVA_FAMILIES = [
 
 // DART: ONE ROW, AND THE REST WAS ALREADY BUILT.
 //
-// Counted over 78 files of a Flutter application: 32 external reads, and every
-// one of them Supabase. No http, no dio, no Process, no asset bundle, no
-// isolate — so no rows for any of them. The Supabase matcher below is reached
-// by shape rather than by name, and a Dart chain reduces to exactly the shape
-// it already expects: `supabase.from.select`, `supabase.functions.invoke`,
-// `supabase.auth.signOut`. Opening it to Dart was the whole of that work.
+// COUNTED, NOT REMEMBERED. 1 121 .dart files across three projects — two
+// public and pinned, one closed — walked for every call no row claimed. The
+// counts below are that walk's, and the row is built from the spellings it
+// found rather than from the shape of the API as anyone recalls it.
 //
-// SharedPreferences is the one row Dart adds: 7 calls, a read off the disk
-// that can fail, and the same kind of store `localStorage` already stands for
-// in JavaScript. `jsonDecode` is NOT here, and that is the Java decision
-// applied again rather than re-argued: it parses a string the program is
-// already holding, which is not an external read however often it throws.
+//   fs      257 hits under a generous net, of which 88 are `File(...)` and
+//           `Directory(...)` CONSTRUCTORS, which touch no disk and are not
+//           reads. What is left is spelled through a different receiver almost
+//           every time — file, _file, configFile, toolchainFile, tempDir,
+//           quickHashFile — so the row keys on the TAIL and never on the head.
+//   net      69 hits, of which 12 are real: http.get (8), http.head (2),
+//           client.postUrl (1), Socket.connect (1). The other 57 are one
+//           project's generated Rust bridge, whose class is named RsHttpClient
+//           and which talks to no network from Dart, plus `image.getUrl` (6),
+//           which builds a URL string and fetches nothing.
+//   db       54 hits, of which 38 are real. The other 16 are `List.insert`,
+//           a core method, on lists called barcodes, tabs, children, actions.
+//           A row matching a bare `.insert` would have reported all of them.
+//   assets    9 hits, 6 of them rootBundle or an assetBundle handle.
+//
+// THE BARE ASYNC SPELLINGS ARE LEFT OUT ON PURPOSE. `exists`, `create`,
+// `delete`, `rename`, `list`, `length` and `stat` without `Sync` are the same
+// words the material uses for a box, a DAO, a notifier, a network interface
+// and a widget overlay. reads.mjs would rather miss those fifteen file
+// operations than report a `_getBox.delete` as one — a false read costs a
+// reader their trust in the whole report, and a missed one costs a finding.
+// They are reached anyway wherever the chain says `File(...)` or `Directory`.
 const DART_FAMILIES = [
   ['storage', /^SharedPreferences\.|\.(getString|setString|getBool|setBool|getInt|setInt|getDouble|setDouble|getStringList|setStringList)$/],
+
+  // Tails that name a file operation and nothing else, plus the four
+  // path_provider entry points, plus the bare forms when the chain itself
+  // says File or Directory.
+  ['fs', /\.(readAsString|readAsStringSync|readAsBytes|readAsBytesSync|readAsLines|readAsLinesSync|writeAsString|writeAsStringSync|writeAsBytes|writeAsBytesSync|existsSync|createSync|deleteSync|renameSync|copySync|listSync|statSync|lengthSync|openRead|openWrite|openSync)$|^(getTemporaryDirectory|getApplicationDocumentsDirectory|getApplicationSupportDirectory|getExternalStorageDirectory|getDownloadsDirectory)$|^(File|Directory)\b[^.]*\.(exists|create|delete|rename|copy|list|stat|length)$/],
+
+  // The two Dart HTTP clients, and the sockets. EVERY name here is keyed on
+  // the head, including the *Url methods. `.get` on its own is a map lookup,
+  // and `.getUrl` on its own is how two of these projects BUILD an image
+  // address without fetching anything: six such calls against one real
+  // client.postUrl.
+  ['net', /^(http|_http|dio|_dio|httpClient|_httpClient)\.(get|post|put|patch|delete|head|read|send|download)$|^(client|_client|httpClient|_httpClient|http|_http)\.(getUrl|postUrl|putUrl|patchUrl|deleteUrl|openUrl)$|^(Socket|SecureSocket|ServerSocket|RawDatagramSocket)\.(connect|bind)$|^WebSocket\.connect$/],
+
+  // sqflite. The raw* names are unambiguous; the plain ones are only taken
+  // when the receiver is the database handle itself.
+  ['db', /\.(rawQuery|rawInsert|rawUpdate|rawDelete)$|^(rawQuery|rawInsert|rawUpdate|rawDelete)$|^(openDatabase|getDatabasesPath|deleteDatabase)$|\bdatabase\.(query|insert|update|delete|execute|transaction|batch)$|^(db|_db|database|_database)\.(query|insert|update|delete|execute|transaction|batch)$/],
+
+  // Files packaged with the application. Their own family rather than fs:
+  // rules 2 and 3 compare a site against its family, and a bundle read that
+  // carries no deadline is not deviant beside a network read that does.
+  ['assets', /^(rootBundle|assetBundle|_assetBundle|bundle)\.(loadString|load|loadStructuredData|loadBuffer)$|^DefaultAssetBundle\.of\.(loadString|load)$/],
 ];
 
 const FAMILIES = { js: JS_FAMILIES, java: JAVA_FAMILIES, dart: DART_FAMILIES };
@@ -206,7 +242,7 @@ export function timeoutMarker(statementText) {
   return null;
 }
 
-export const FAMILY_NAMES = ['supabase', 'net', 'db', 'proc', 'fs', 'parse', 'storage', 'dynamic-import'];
+export const FAMILY_NAMES = ['supabase', 'net', 'db', 'proc', 'fs', 'parse', 'storage', 'assets', 'dynamic-import'];
 
 /**
  * The families each language's table can actually produce, derived from the

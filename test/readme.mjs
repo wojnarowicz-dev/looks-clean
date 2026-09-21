@@ -302,6 +302,27 @@ for (const [file] of PAGES) {
     denied.length ? 'denied: ' + denied.join(', ') : denials.length + ' denial line(s) checked');
 }
 
+// AND THE SAME FOR THE FAMILIES, for the same reason. The count is already a
+// claim, and the claim caught the count — but the sentence beside it spells
+// the families out by name, and a number agreeing with the tool while the
+// list beside it is short by one is exactly the shape this tool reports.
+// Adding `assets` in 0.3.1 left both pages naming eight of nine.
+//
+// SPELLINGS, NOT SLUGS. A page is prose: it writes "a dynamic import", not
+// `dynamic-import`. Each variant is listed here with the family it stands
+// for, so a page cannot satisfy this by accident and a family cannot be
+// quietly dropped by rewording the sentence around it.
+const FAMILY_SPELLINGS = {
+  'dynamic-import': ['dynamic-import', 'dynamic import', 'dynamiczny import'],
+};
+for (const [file] of PAGES) {
+  const page = text[file];
+  const missing = FAMILY_NAMES.filter(nm =>
+    !(FAMILY_SPELLINGS[nm] || [nm]).some(v => page.includes(v)));
+  check(file + ' names every family a read can have', missing.length === 0,
+    missing.length ? 'missing: ' + missing.join(', ') : FAMILY_NAMES.length + ' families');
+}
+
 // THE TWO RUNS MUST STAY TWO RUNS. Collapsing them into one figure is the
 // tempting edit — it reads better and it is a lie about how the number was
 // arrived at.

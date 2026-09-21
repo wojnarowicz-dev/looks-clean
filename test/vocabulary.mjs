@@ -144,6 +144,30 @@ const DART_FAMILY_EXAMPLES = [
   ['storage', 'SharedPreferences.getInstance', 'SharedPreferences'],
   ['storage', 'prefs.getString', 'prefs'],
   ['storage', 'prefs.setString', 'prefs'],
+  // Every spelling below was counted in the material, not recalled from the
+  // API. The receiver differs almost every time, which is why the fs row
+  // keys on the tail.
+  ['fs', 'file.readAsStringSync', 'file'],
+  ['fs', 'File.existsSync', 'File'],
+  ['fs', 'quickHashFile.writeAsStringSync', 'quickHashFile'],
+  ['fs', 'entity.readAsLines', 'entity'],
+  ['fs', 'src.listSync', 'src'],
+  ['fs', 'getTemporaryDirectory', 'getTemporaryDirectory'],
+  // The bare async names are reached only when the chain says so itself.
+  ['fs', 'File(_getWindowsFilePath).exists', 'File'],
+  ['fs', 'File.delete', 'File'],
+  ['net', 'http.get', 'http'],
+  ['net', 'http.head', 'http'],
+  ['net', 'client.postUrl', 'client'],
+  ['net', 'Socket.connect', 'Socket'],
+  ['db', 'localDatabase.database.query', 'localDatabase'],
+  ['db', 'databaseExecutor.rawInsert', 'databaseExecutor'],
+  ['db', 'db.execute', 'db'],
+  ['db', 'rawInsert', 'rawInsert'],
+  ['db', 'openDatabase', 'openDatabase'],
+  ['assets', 'rootBundle.loadString', 'rootBundle'],
+  ['assets', 'assetBundle.loadString', 'assetBundle'],
+  ['assets', 'rootBundle.load', 'rootBundle'],
 ];
 
 const DART_NOT_READS = [
@@ -154,6 +178,22 @@ const DART_NOT_READS = [
   ['jsonDecode', 'jsonDecode', 'a string the program already holds: the Java decision, applied again'],
   ['Duration', 'Duration', 'a value, and it appears beside almost every animation'],
   ['notifyListeners', 'notifyListeners', 'a notification to this program'],
+  // EACH OF THESE WAS COUNTED IN THE MATERIAL AND WOULD HAVE BEEN REPORTED BY
+  // a wider row. They are the reason the rows are shaped the way they are.
+  ['File', 'File', 'a constructor: it touches no disk until something is read'],
+  ['Directory', 'Directory', 'the same, 22 of them'],
+  ['_getBox.delete', '_getBox', 'a key-value box, not a file'],
+  ['daoProductList.delete', 'daoProductList', 'a data access object'],
+  ['barcodes.insert', 'barcodes', 'List.insert, a core method — 16 such calls'],
+  ['children.insert', 'children', 'the same, on a widget list'],
+  ['Overlay.of.insert', 'Overlay', 'inserting an overlay entry'],
+  ['BarcodeParameter.list', 'BarcodeParameter', 'a list of parameters, not a directory'],
+  ['NetworkInterface.list', 'NetworkInterface', 'interfaces, not files'],
+  ['ref.notifier.rename', 'ref', 'renaming in a state notifier'],
+  ['TransferNotification.update', 'TransferNotification', 'a notification, not a row'],
+  ['task.execute', 'task', 'running a task, not a statement'],
+  ['image.getUrl', 'image', 'builds an address and fetches nothing — six such calls'],
+  ['client.close', 'client', 'closing a client is not a read'],
 ];
 
 for (const [family, callee, head] of DART_FAMILY_EXAMPLES) {

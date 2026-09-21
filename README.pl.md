@@ -36,7 +36,7 @@ z przodu.
 <!-- lc:claim name=layers value=10 -->
 <!-- lc:claim name=knownAnswers value=7 -->
 <!-- lc:claim name=knownAnswersInScope value=6 -->
-<!-- lc:claim name=families value=8 -->
+<!-- lc:claim name=families value=9 -->
 <!-- lc:claim name=languages value=2 -->
 <!-- lc:claim name=messages value=140 -->
 <!-- lc:claim name=fixtureFindings value=7 -->
@@ -452,10 +452,10 @@ stronie wejścia.
 ## Warstwa
 
 Dwa miejsca są sąsiadami, gdy leżą **w tym samym miejscu** i należą do **tej
-samej rodziny operacji** — supabase, net, db, proc, fs, parse, storage albo
-dynamiczny import. Obie połowy mają znaczenie: `saveDream` i `saveProfile` w
-jednym pliku serwisu pisze ta sama ręka pod tymi samymi ograniczeniami, a
-`fetch` nie jest porównywalny z `JSON.parse`.
+samej rodziny operacji** — supabase, net, db, proc, fs, parse, storage,
+assets albo dynamiczny import. Obie połowy mają znaczenie: `saveDream`
+i `saveProfile` w jednym pliku serwisu pisze ta sama ręka pod tymi samymi
+ograniczeniami, a `fetch` nie jest porównywalny z `JSON.parse`.
 
 Warstwa wspina się po drabinie, gdy grupa jest za mała, żeby cokolwiek
 powiedzieć:
