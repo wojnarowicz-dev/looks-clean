@@ -221,14 +221,59 @@ if (bypasses.length) failed++;
   {
     const pkg = JSON.parse(fs.readFileSync(path.join(REPO, 'package.json'), 'utf8'));
     const names = LANGUAGES.map(l => l.name);
-    const absent = names.filter(nm => !pkg.description.includes(nm));
+
+    // `Java` sits inside `JavaScript`. A plain substring test passed a
+    // description that had dropped Java and kept JavaScript, and printed
+    // `PASS  4 languages` while naming three. A check that cannot go red is
+    // worse than no check: it is the empty result this tool exists to find.
+    const LETTER = c => c !== undefined && /[A-Za-z]/.test(c);
+    const namesIt = (text, name) => {
+      for (let at = text.indexOf(name); at !== -1; at = text.indexOf(name, at + 1))
+        if (!LETTER(text[at - 1]) && !LETTER(text[at + name.length])) return true;
+      return false;
+    };
+
+    const absent = names.filter(nm => !namesIt(pkg.description, nm));
     check('the package description names every language', absent.length === 0,
       absent.length ? 'missing: ' + absent.join(', ') : names.length + ' languages');
 
-    const kw = pkg.keywords.map(k => k.toLowerCase());
+    const kw = (pkg.keywords || []).map(k => k.toLowerCase());
     const unkeyed = names.filter(nm => !kw.includes(nm.toLowerCase()));
     check('the keywords name every language', unkeyed.length === 0,
       unkeyed.length ? 'missing: ' + unkeyed.join(', ') : names.length + ' keywords');
+
+    // THE DESCRIPTION IS READ BY A STRANGER. npm prints it to someone who has
+    // never heard of this project and does not read Polish. A sibling tool
+    // shipped a release whose whole description was Polish without diacritics
+    // — `Porownuje migracje SQL ... Tylko odczyt.` — and nothing said a word,
+    // because a check for ąćęłńóśźż would have let that sentence through.
+    //
+    // This is a smoke alarm, not a language detector. It carries the function
+    // words no Polish sentence of this length avoids, plus the ones that
+    // actually shipped. Add to it rather than making it clever.
+    const POLISH = ['nie', 'jest', 'sie', 'tego', 'tym', 'tych', 'ktore', 'ktora', 'ktory',
+      'oraz', 'przez', 'dla', 'jako', 'tylko', 'bez', 'gdy', 'czy', 'juz', 'moze', 'musi',
+      'wszystkie', 'porownuje', 'wypisuje', 'sprawdza', 'zwraca', 'odczyt', 'plik', 'pliku',
+      'kod', 'kodu', 'baza', 'bazy', 'migracje', 'miejsca', 'narzedzie', 'rozjazdy'];
+    const DIACRITICS = /[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/;
+    const descWords = (pkg.description.match(/[A-Za-z]{3,}/g) || []).map(w => w.toLowerCase());
+    const leaked = [...new Set(descWords.filter(w => POLISH.includes(w)))];
+    const diacritic = pkg.description.match(DIACRITICS);
+    check('the description is in English', leaked.length === 0 && !diacritic,
+      diacritic ? 'Polish letter: ' + diacritic[0]
+        : leaked.length ? 'Polish: ' + leaked.join(', ')
+        : descWords.length + ' words, none Polish');
+
+    // Keyword hygiene. npm lowercases nothing and de-duplicates nothing; a
+    // keyword with a capital in it is simply a keyword nobody reaches.
+    const raw = pkg.keywords || [];
+    const cased = raw.filter(k => k !== k.toLowerCase());
+    const dupes = [...new Set(kw.filter((k, i) => kw.indexOf(k) !== i))];
+    check('the keywords are usable', raw.length > 0 && cased.length === 0 && dupes.length === 0,
+      !raw.length ? 'no keywords at all'
+        : cased.length ? 'not lowercase: ' + cased.join(', ')
+        : dupes.length ? 'duplicated: ' + dupes.join(', ')
+        : raw.length + ' keywords, lowercase, distinct');
   }
 
   const hint = t('noSourcesHint', extensionsSpaced(), pagesSpaced());
