@@ -38,29 +38,49 @@ export const needsPopulation = true;
 //
 // The question this rule asks is not "did you use a Result type". It is "can the
 // caller tell". Anything that is not the ambiguous value can.
-const distinguishes = h =>
-  h.effects.rethrows || (h.answer && h.answer.kind !== 'ambiguous');
+// AND A COMMAND'S ANSWER IS NOT THE AMBIGUOUS ONE, WHATEVER IT LOOKS LIKE.
+// `false` from a function that writes says "it did not happen", which is what
+// happened. The empty result this rule is about does not exist under a write,
+// so there is nothing for the failure to be mistaken for. `constantAnswers`
+// is how the IR says the operation's value never reached the answer — see the
+// note beside it in ir.mjs.
+//
+// Measured 2026-09-21: one of the six false alarms on a Flutter application
+// was this, and its near-twin four hundred lines away — a read whose value IS
+// the answer — is a real defect that must keep being reported.
+const distinguishes = (h, command) =>
+  h.effects.rethrows || (h.answer && h.answer.kind !== 'ambiguous') || command(h);
 
-const collapses = h => h.answer && h.answer.kind === 'ambiguous';
+const collapses = (h, command) =>
+  h.answer && h.answer.kind === 'ambiguous' && !command(h);
 
 export function run(ir, ctx) {
+  const constant = new Map(ir.functions.map(f => [f.id, !!f.constantAnswers]));
+  // BOTH HALVES ARE REQUIRED, and the first one alone was wrong. "Every return
+  // is a constant" looked like it named a command, and on fresh Java material
+  // it removed four real findings: `if (!Files.isRegularFile(p)) return false;`
+  // returns constants too, but the read's value reaches the answer through the
+  // branch, so `false` really does mean both "no" and "could not tell".
+  const command = h =>
+    h.opDiscarded === true && h.fn !== null && constant.get(h.fn) === true;
   // Only handlers over an external operation. The ambiguity between "none" and
   // "could not check" is only interesting where "could not check" is a state
   // that actually happens.
-  const candidates = ir.handlers.filter(h => h.family !== null && (distinguishes(h) || collapses(h)));
+  const candidates = ir.handlers.filter(h =>
+    h.family !== null && (distinguishes(h, command) || collapses(h, command)));
 
   const { peersOf } = groupPeers(candidates, {
     keyOf: h => h.lang + ' ' + h.family,
     minpop: ctx.minpop,
     mode: ctx.layerMode,
-    hasConvention: members => members.some(distinguishes),
+    hasConvention: members => members.some(h => distinguishes(h, command)),
   });
 
   const findings = [];
   const skipped = [];
 
   for (const h of candidates) {
-    if (!collapses(h)) continue;
+    if (!collapses(h, command)) continue;
 
     const peers = peersOf(h);
     if (!peers || peers.tooFew) {
@@ -73,8 +93,8 @@ export function run(ir, ctx) {
       continue;
     }
 
-    const safe = peers.members.filter(distinguishes);
-    const odd = peers.members.filter(collapses);
+    const safe = peers.members.filter(h => distinguishes(h, command));
+    const odd = peers.members.filter(h => collapses(h, command));
     if (safe.length === 0) {
       skipped.push({
         rule: id, file: h.file, line: h.line,

@@ -598,6 +598,76 @@ check('a bare return is undefined', classify(null, JS).kind === 'ambiguous' &&
     silent ? 'no trace, as it should be' : 'no handler');
 }
 
+// A COMMAND AND A QUERY THAT DIFFER IN NOTHING A HANDLER CAN SEE. Rule 2 asks
+// whether a caller can tell the failure answer from the empty result. Under a
+// write there is no empty result, so `false` reports the failure rather than
+// disguising it — but the handler alone cannot tell the two apart. Only the
+// success return can: a constant means the operation's value never became the
+// answer.
+//
+// The query is the half that matters. A correction that silenced it would have
+// removed a real defect to remove a false alarm, and the run would have looked
+// better for it.
+{
+  const dartParser = await parserFor('fixture.dart');
+  const source = fs.readFileSync(path.join(HERE, 'fixtures', 'dart', 'commands.dart'), 'utf8');
+  const tree = dartParser.parse(source);
+  check('the command fixture parses', !tree.rootNode.hasError, 'no ERROR node');
+
+  const ir = analyse(tree, 'commands.dart', 0, DART);
+  const fn = n => ir.functions.find(f => f.name === n);
+  const hd = n => ir.handlers.find(h => h.fnName === n);
+
+  // TWO HALVES, AND NEITHER IS ENOUGH ALONE. constantAnswers says the answer
+  // is written into the source; opDiscarded says the operation's value never
+  // became it. The Java fixture below is the proof that the first half alone
+  // is not a command test.
+  check('dart command: a write answering a constant hands back no data',
+    !!fn('giveConsent') && fn('giveConsent').constantAnswers === true &&
+    !!hd('giveConsent') && hd('giveConsent').opDiscarded === true,
+    'constantAnswers=' + (fn('giveConsent') || {}).constantAnswers +
+    ' opDiscarded=' + (hd('giveConsent') || {}).opDiscarded);
+  check('dart query: a read that becomes the answer still can',
+    !!fn('hasConsent') && fn('hasConsent').constantAnswers === false &&
+    !!hd('hasConsent') && hd('hasConsent').opDiscarded === false,
+    'constantAnswers=' + (fn('hasConsent') || {}).constantAnswers +
+    ' opDiscarded=' + (hd('hasConsent') || {}).opDiscarded);
+
+  // The boundary, stated so that a later widening has to argue with it.
+  check('dart command: a list answer is not a constant answer',
+    !!fn('purge') && fn('purge').constantAnswers === false,
+    'constantAnswers=' + (fn('purge') || {}).constantAnswers);
+}
+
+// THE SHAPE THAT BROKE THE FIRST VERSION OF THIS. "Every return is a
+// constant" is true of a query that tests its read in a branch and answers
+// with a literal either way, and calling that a command removed four real
+// findings from Java material that had not moved in any release. The two
+// methods below differ in one thing only: whether the guarded operation's
+// value goes anywhere.
+{
+  const javaFixtureParser = await parserFor('Fixture.java');
+  const source = fs.readFileSync(path.join(HERE, 'fixtures', 'java', 'Commands.java'), 'utf8');
+  const tree = javaFixtureParser.parse(source);
+  check('the java command fixture parses', !tree.rootNode.hasError, 'no ERROR node');
+
+  const ir = analyse(tree, 'Commands.java', 0, JAVA);
+  const hd = n => ir.handlers.find(h => h.fnName === n);
+  const fn = n => ir.functions.find(f => f.name === n);
+
+  check('java: both shapes answer with constants',
+    !!fn('hasLayout') && !!fn('discard') &&
+    fn('hasLayout').constantAnswers === true && fn('discard').constantAnswers === true,
+    'hasLayout=' + (fn('hasLayout') || {}).constantAnswers +
+    ' discard=' + (fn('discard') || {}).constantAnswers);
+  check('java query: a read tested in a branch is not discarded',
+    !!hd('hasLayout') && hd('hasLayout').opDiscarded === false,
+    'opDiscarded=' + (hd('hasLayout') || {}).opDiscarded);
+  check('java command: a write standing alone is discarded',
+    !!hd('discard') && hd('discard').opDiscarded === true,
+    'opDiscarded=' + (hd('discard') || {}).opDiscarded);
+}
+
 // ---------------------------------------------------------------- 5. normalise
 //
 // The text normaliser is what makes two spellings of one answer compare equal.

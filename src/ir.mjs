@@ -149,6 +149,7 @@ export function analyse(tree, file, off = 0, syn) {
           endIndex: node.endIndex,
           stmtStart: stmt.startIndex,
           stmtEnd: stmt.endIndex,
+          discarded: valueDiscarded(node, stmt),
         });
       }
     }
@@ -214,6 +215,7 @@ export function analyse(tree, file, off = 0, syn) {
       snippet: snippetOf(body || node),
       family: null,       // filled in below, once every read is known
       opLabel: null,
+      opDiscarded: false,
     };
   }
 
@@ -370,8 +372,30 @@ export function analyse(tree, file, off = 0, syn) {
       kind: c.kind,
       value: c.value,
       potential: potentialEmpty(value),
+      literal: !!value && syn.LITERAL_TYPES.has(unwrap(value, syn).type),
       text: value ? normaliseText(unwrap(value, syn).text).slice(0, 80) : 'undefined',
     };
+  }
+
+  /**
+   * DID THIS OPERATION'S VALUE GO ANYWHERE. A write standing alone as a
+   * statement answers nothing; a read whose value is assigned, returned or
+   * tested answers something. That is the difference between a command and a
+   * query, and it is the only honest way to tell them apart — a table of
+   * write-sounding method names would be the same mistake as a table of read
+   * families fitted to one application.
+   */
+  function valueDiscarded(callNode, stmt) {
+    if (stmt.type !== syn.EXPRESSION_STATEMENT_TYPE) return false;
+    let e = stmt.namedChildCount ? stmt.namedChild(0) : null;
+    while (e && syn.STATEMENT_WRAPPER_TYPES.has(e.type) && e.namedChildCount) e = e.namedChild(0);
+    // THE WHOLE CHAIN IS THE OPERATION. `supabase.from(t).update(v).eq(i, x);`
+    // records its read at `update`, while the statement ends at `eq` — so the
+    // test is containment, not equality. An expression statement ending in a
+    // call uses its value for nothing; one ending in an assignment does, and
+    // an assignment is not a call.
+    if (!e || !syn.isCall(e)) return false;
+    return callNode.startIndex >= e.startIndex && callNode.endIndex <= e.endIndex;
   }
 
   function pathOf(node, fn) {
@@ -432,6 +456,30 @@ export function analyse(tree, file, off = 0, syn) {
   for (const fn of functions)
     fn.answerless = fn.returns.length > 0 && fn.returns.every(r => r.text === 'undefined');
 
+  // A FUNCTION THAT HANDS BACK NO DATA HAS NO EMPTY ANSWER TO BE MISTAKEN FOR.
+  // Rule 2 asks whether a caller can tell a failure answer apart from the
+  // empty result. Under a COMMAND there is no empty result: a write either
+  // happened or it did not, and the flag reports which. The operation's own
+  // value never reaches the answer, so every return is written into the source
+  // rather than computed, and a constant cannot collide with data that was
+  // never handed back.
+  //
+  // Measured 2026-09-21 on a closed-source Flutter application. `giveConsent`
+  // and `hasGivenConsent` sit four hundred lines apart in one file and are
+  // identical in everything a handler can see — same family, same `false`, same
+  // empty binding. The first discards the write's result and answers `true`;
+  // the second returns the read itself, which can legitimately be `false`. Only
+  // the second collapses two states into one, and only it is a defect.
+  //
+  // THE TEST IS NOT `path === 'failure'`, deliberately. In Dart the catch body
+  // is a sibling of the clause rather than a child, so a return inside a catch
+  // is labelled `normal` there while JS and Java label it `failure`. A
+  // correction resting on that field would have been right in two languages and
+  // silently wrong in the third. Every return is asked instead, and the
+  // handler's own answer is a literal in the cases this is about anyway.
+  for (const fn of functions)
+    fn.constantAnswers = fn.returns.length > 0 && fn.returns.every(r => r.literal);
+
   // ------------------------------------------------------------ handler families
   // Which read was this handler handling? Answered from the read list rather
   // than by re-walking, so a handler and a read can never disagree about what
@@ -475,6 +523,7 @@ export function analyse(tree, file, off = 0, syn) {
     if (candidates.length) {
       h.family = candidates[candidates.length - 1].family;
       h.opLabel = candidates[candidates.length - 1].callee;
+      h.opDiscarded = candidates[candidates.length - 1].discarded === true;
     }
   }
 

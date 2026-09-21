@@ -53,6 +53,27 @@ export const BINDING_REF_TYPES = new Set(['identifier', 'identifier_dollar_escap
 // packages. `print` is listed here and nowhere else for that reason.
 export const TRACE_NAMES = new Set(['debugPrint', 'print']);
 
+// See the note in js.mjs.
+
+// WHETHER AN OPERATION'S VALUE GOES ANYWHERE. Used only to tell a write from a
+// read — see valueDiscarded in ir.mjs. Kept apart from UNWRAP_TYPES on
+// purpose: that set feeds classify() and valueKey(), and widening it would
+// move numbers in every rule.
+export const EXPRESSION_STATEMENT_TYPE = 'expression_statement';
+// This grammar wraps `await x` in a unary_expression, so it belongs here —
+// unlike in Java, where a unary_expression is `!x` and consumes its operand.
+// The two cannot be confused, because this set is only ever consulted under an
+// expression statement, and `!f();` is not a statement anyone writes.
+export const STATEMENT_WRAPPER_TYPES = new Set([
+  'await_expression', 'unary_expression', 'parenthesized_expression',
+]);
+
+export const LITERAL_TYPES = new Set([
+  'true', 'false', 'null_literal', 'string_literal',
+  'decimal_integer_literal', 'hex_integer_literal',
+  'decimal_floating_point_literal',
+]);
+
 /** `throw` and `rethrow` are expressions here, which is why this is a table. */
 export const RETHROW_TYPES = new Set(['throw_expression', 'rethrow_expression']);
 

@@ -60,6 +60,24 @@ export const BINDING_REF_TYPES = new Set(['identifier']);
 // Recorded as a known gap instead.
 export const TRACE_NAMES = new Set();
 
+// See the note in js.mjs.
+
+// WHETHER AN OPERATION'S VALUE GOES ANYWHERE. Used only to tell a write from a
+// read — see valueDiscarded in ir.mjs. Kept apart from UNWRAP_TYPES on
+// purpose: that set feeds classify() and valueKey(), and widening it would
+// move numbers in every rule.
+export const EXPRESSION_STATEMENT_TYPE = 'expression_statement';
+// No await here, and `!x` is a CONSUMER of the value rather than a wrapper,
+// so unary_expression is deliberately absent.
+export const STATEMENT_WRAPPER_TYPES = new Set(['parenthesized_expression']);
+
+export const LITERAL_TYPES = new Set([
+  'true', 'false', 'null_literal', 'string_literal', 'character_literal',
+  'decimal_integer_literal', 'hex_integer_literal', 'octal_integer_literal',
+  'binary_integer_literal', 'decimal_floating_point_literal',
+  'hex_floating_point_literal',
+]);
+
 export const BLOCK_TYPE = 'block';
 
 /** Where the condition of an `if` is kept. Dart keeps it by position instead. */

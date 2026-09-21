@@ -52,6 +52,23 @@ export const BINDING_REF_TYPES = new Set(['identifier']);
 // JavaScript it is a page instruction, not a log.
 export const TRACE_NAMES = new Set();
 
+// Values written into the source rather than computed from anything. A
+// function whose every return is one of these hands back no data — see
+// constantAnswers in ir.mjs.
+
+// WHETHER AN OPERATION'S VALUE GOES ANYWHERE. Used only to tell a write from a
+// read — see valueDiscarded in ir.mjs. Kept apart from UNWRAP_TYPES on
+// purpose: that set feeds classify() and valueKey(), and widening it would
+// move numbers in every rule.
+export const EXPRESSION_STATEMENT_TYPE = 'expression_statement';
+export const STATEMENT_WRAPPER_TYPES = new Set([
+  'await_expression', 'parenthesized_expression',
+]);
+
+export const LITERAL_TYPES = new Set([
+  'true', 'false', 'number', 'string', 'template_string', 'null', 'undefined', 'regex',
+]);
+
 export const BLOCK_TYPE = 'statement_block';
 
 /** Where the condition of an `if` is kept. Dart keeps it by position instead. */
