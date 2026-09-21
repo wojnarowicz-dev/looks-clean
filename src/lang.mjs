@@ -86,9 +86,11 @@ const S = {
   'noSourcesFound': {
     en: 'No {0} files under {1}.',
     pl: 'Nie znalazlem plikow {0} w {1}.' },
+  // {0} IS THE LIST, NOT A WORD OF IT. Written out here it drifted twice; see
+  // src/languages.mjs for what that cost.
   'noSourcesHint': {
-    en: '   This is NOT the same as "nothing found": there was nothing to read.\n   looks-clean reads .js .mjs .cjs .jsx .ts .mts .tsx .java .dart and inline <script> in .html.',
-    pl: '   To NIE to samo, co "nic nie znalazlem": nie bylo czego czytac.\n   looks-clean czyta .js .mjs .cjs .jsx .ts .mts .tsx .java .dart oraz <script> w .html.' },
+    en: '   This is NOT the same as "nothing found": there was nothing to read.\n   looks-clean reads {0} and inline <script> in {1}.',
+    pl: '   To NIE to samo, co "nic nie znalazlem": nie bylo czego czytac.\n   looks-clean czyta {0} oraz <script> w {1}.' },
   'noPopulation': {
     en: '{0} site(s) read, and not one peer group reached {1} members.',
     pl: 'Wczytalem {0} miejsc i zadna grupa sasiadow nie osiagnela {1} czlonkow.' },
@@ -231,7 +233,12 @@ const S = {
   'helpLangPl': { en: '  --lang pl   Polish', pl: '  --lang pl   polski' },
   'helpCommands': { en: 'COMMANDS', pl: 'POLECENIA' },
   'helpOptions': { en: '         options: {0}', pl: '         opcje: {0}' },
-  'cmdScan': { en: 'Scan a JavaScript, TypeScript, Java or Dart tree with all four rules.', pl: 'Przeskanuj drzewo JavaScript, TypeScript, Java albo Dart wszystkimi czterema regulami.' },
+  // The conjunction of the language list lives here for the same reason every
+  // other word a person reads does: the list is built in code, but 'or' and
+  // 'albo' are prose, and prose that leaks into a source file is half a
+  // translation waiting to be noticed by somebody who does not speak it.
+  'listConjunction': { en: 'or', pl: 'albo' },
+  'cmdScan': { en: 'Scan a {0} tree with all four rules.', pl: 'Przeskanuj drzewo {0} wszystkimi czterema regulami.' },
   'cmdDiff': { en: 'Difference between two saved runs: what appeared, what is gone, what changed.', pl: 'Roznica miedzy dwoma zapisami: co doszlo, co zniknelo, co sie zmienilo.' },
   'cmdRank': { en: 'One ranked list across saved runs — what to read first.', pl: 'Jedna lista ponad zapisami — co czytac pierwsze.' },
   'cmdRules': { en: 'What the four rules are, and which of them needs neighbours.', pl: 'Czym sa cztery reguly i ktora z nich potrzebuje sasiadow.' },

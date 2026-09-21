@@ -36,6 +36,7 @@ import { RULE_IDS, NEEDS_POPULATION } from '../src/rules/index.mjs';
 import { FAMILY_NAMES } from '../src/reads.mjs';
 import { KEYS, TABLE } from '../src/lang.mjs';
 import { DEFAULT_EXCLUDE } from '../src/config.mjs';
+import { LANGUAGES } from '../src/languages.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(HERE, '..');
@@ -255,6 +256,29 @@ for (const smp of precision.languageSamples || []) {
     .filter(r => r.verdict === 'noise').map(r => r.rule));
   check(smp.language + ': the false alarms come from the one rule the record blames',
     noisyRules.size <= 1, [...noisyRules].join(', ') || 'none');
+}
+
+// A PAGE THAT NAMES THE LANGUAGES HAS TO NAME THIS SET, and must not deny one
+// of them in the same breath. Both pages offered "JavaScript, TypeScript or
+// Java" for a release after Dart shipped, and both listed Dart under what the
+// tool does NOT read — on the page whose whole subject is a tool that finds
+// sentences disagreeing with the code beneath them.
+for (const [file] of PAGES) {
+  const page = text[file];
+  const missing = LANGUAGES.map(l => l.name).filter(nm => !page.includes(nm));
+  check(file + ' names every language that is read', missing.length === 0,
+    missing.length ? 'missing: ' + missing.join(', ') : LANGUAGES.length + ' languages');
+
+  // The line that lists what is NOT read is the one that goes stale silently,
+  // because adding a language is a happy edit and nobody rereads the denials.
+  // ONLY THE DENIAL ITSELF. The same line carries the positive half —
+  // "JavaScript and TypeScript first" — so a line-wide match reads its answer
+  // out of the wrong clause and fails a page that is correct.
+  const denials = [...page.matchAll(/\*\*(?:It does not read|Nie czyta)([^*]*)\*\*/g)].map(m => m[1]);
+  const denied = LANGUAGES.map(l => l.name)
+    .filter(nm => denials.some(d => new RegExp('\\b' + nm, 'i').test(d)));
+  check(file + ' does not deny a language it reads', denied.length === 0,
+    denied.length ? 'denied: ' + denied.join(', ') : denials.length + ' denial line(s) checked');
 }
 
 // THE TWO RUNS MUST STAY TWO RUNS. Collapsing them into one figure is the

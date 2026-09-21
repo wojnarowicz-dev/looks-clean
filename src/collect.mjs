@@ -14,11 +14,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { parserFor, syntaxFor } from './parser.mjs';
+import { SOURCE_EXT, PAGE_EXT } from './languages.mjs';
 import { tryReadSource } from './input.mjs';
 import { analyse } from './ir.mjs';
 
-const SCRIPT_EXT = /\.(js|mjs|cjs|jsx|ts|mts|cts|tsx|java|dart)$/i;
-const HTML_EXT = /\.html?$/i;
+// Both matchers are built from src/languages.mjs, so a language cannot be
+// readable here and unmentioned in the sentence that lists what is read.
+const SCRIPT_EXT = SOURCE_EXT;
+const HTML_EXT = PAGE_EXT;
 
 // HOW MUCH WAS NOT READ, AND UNDER WHICH RULE.
 //

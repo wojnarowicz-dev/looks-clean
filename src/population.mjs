@@ -10,17 +10,18 @@
 // So every exit through "nothing to report" passes through here and says which
 // of the two it was.
 import { t } from './lang.mjs';
+import { extensionsSpaced, pagesSpaced } from './languages.mjs';
 
 /**
  * Nothing of the requested kind was found on disk.
  * @param count how many files were found
- * @param kind  what we were looking for, e.g. ".js/.ts"
+ * @param kind  what we were looking for, built by src/languages.mjs
  * @param root  the directory that was scanned
  * @returns null when something was found, otherwise a message
  */
 export function noSourcesIn(count, kind, root) {
   if (count > 0) return null;
-  return t('noSourcesFound', kind, root) + '\n' + t('noSourcesHint');
+  return t('noSourcesFound', kind, root) + '\n' + t('noSourcesHint', extensionsSpaced(), pagesSpaced());
 }
 
 /**

@@ -19,7 +19,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { TABLE, KEYS } from '../src/lang.mjs';
+import { TABLE, KEYS, t } from '../src/lang.mjs';
+import { LANGUAGES, SOURCE_EXTENSIONS, PAGE_EXTENSIONS, extensionsSpaced, pagesSpaced, languagesJoined }
+  from '../src/languages.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.join(HERE, '..');
@@ -134,6 +136,84 @@ if (bypasses.length) failed++;
   console.log('  ' + (bad.length ? 'FAIL  ' : 'PASS  ') + 'the file names are in English');
   for (const b of bad) console.log('        ' + b);
   if (bad.length) failed++;
+}
+
+// ---------------------------------------------------------------- 6
+//
+// WHICH LANGUAGES THIS BUILD READS IS A FACT, AND EVERY SENTENCE ABOUT IT IS A
+// CLAIM. The fact is src/languages.mjs. The claims were written out by hand in
+// six places, and counting them found five that had drifted: both pages still
+// offered "JavaScript, TypeScript or Java" after Dart landed, a known answer
+// explained itself with a list two languages old, a resilience scenario waited
+// for a phrase that could no longer be printed, and the sentence naming every
+// readable extension had been missing `.cts` since before any of that.
+//
+// None of them broke anything. Each of them told a reader a set that was not
+// the set — which is the defect this tool reports in other people's code.
+//
+// So two things are checked here, in both directions:
+//   1. the dictionary names no language and no source extension of its own
+//   2. what a person actually reads names every one of them
+{
+  const check = (name, ok, detail) => {
+    if (!ok) failed++;
+    console.log('  ' + (ok ? 'PASS  ' : 'FAIL  ') + name.padEnd(52) + (detail || ''));
+  };
+
+  // A mention that is NOT a claim about what this build reads. Each one is
+  // listed with its reason, because an exemption without a reason is how a
+  // check like this quietly stops checking.
+  const EXEMPT = [
+    ['diffNeedsTwo', '.json', 'a snapshot the command takes, not a language it reads'],
+    ['configLookupFailed', '.json', 'the configuration file, named so it can be looked for'],
+    ['helpHowToRun', '.mjs', "this tool's own entry point, not a claim about sources"],
+    ['r1Alone', 'Dart', 'the Dart ANALYZER, named beside eslint and C# as a linter that already finds the empty case'],
+  ];
+
+  const EXT = /\.[a-z]{1,5}\b/g;
+  const NAMES = ['JavaScript', 'TypeScript', 'Java', 'Dart', 'Python', 'Go', 'Ruby', 'Kotlin', 'Swift', 'PHP'];
+  const allowedExt = new Set([...SOURCE_EXTENSIONS, ...PAGE_EXTENSIONS].map(e => '.' + e));
+  const exempt = (key, token) => EXEMPT.some(e => e[0] === key && e[1] === token);
+
+  const strays = [];
+  for (const k of KEYS) {
+    for (const lang of ['en', 'pl']) {
+      const text = String(TABLE[k][lang] || '');
+      for (const m of text.matchAll(EXT)) {
+        const tok = m[0].toLowerCase();
+        if (!allowedExt.has(tok)) continue;   // only the ones this build claims to read
+        if (exempt(k, m[0])) continue;
+        strays.push(k + ' [' + lang + '] ' + m[0]);
+      }
+      for (const nm of NAMES) {
+        if (!new RegExp('\\b' + nm + '\\b').test(text)) continue;
+        if (exempt(k, nm)) continue;
+        strays.push(k + ' [' + lang + '] ' + nm);
+      }
+    }
+  }
+  check('the dictionary names no language of its own', strays.length === 0,
+    strays.length ? strays.slice(0, 4).join('; ') : KEYS.length + ' keys, ' + EXEMPT.length + ' stated exemptions');
+
+  // Every exemption must still be reachable. One left behind after its string
+  // was rewritten is a licence nobody is using and nobody will notice.
+  const dead = EXEMPT.filter(([key, token]) =>
+    !TABLE[key] || !['en', 'pl'].some(l => String(TABLE[key][l] || '').includes(token)));
+  check('every exemption is still in use', dead.length === 0,
+    dead.length ? dead.map(d => d[0] + '/' + d[1]).join(', ') : EXEMPT.length + ' in use');
+
+  // AND THE OTHER DIRECTION. The dictionary being clean proves only that the
+  // list is not written twice; it does not prove a reader is ever told it.
+  const help = t('cmdScan', languagesJoined(t('listConjunction')));
+  const unnamed = LANGUAGES.map(l => l.name).filter(n => !help.includes(n));
+  check('the help names every language that is read', unnamed.length === 0,
+    unnamed.length ? 'missing: ' + unnamed.join(', ') : LANGUAGES.length + ' languages');
+
+  const hint = t('noSourcesHint', extensionsSpaced(), pagesSpaced());
+  const unlisted = [...SOURCE_EXTENSIONS, ...PAGE_EXTENSIONS].filter(e => !hint.includes('.' + e));
+  check('the "nothing to read" sentence names every extension', unlisted.length === 0,
+    unlisted.length ? 'missing: ' + unlisted.join(', ')
+      : SOURCE_EXTENSIONS.length + ' sources and ' + PAGE_EXTENSIONS.length + ' page types');
 }
 
 console.log('\n  ' + (failed ? failed + ' check(s) failed' : 'all checks passed'));

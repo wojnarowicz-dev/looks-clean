@@ -38,6 +38,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { extensionsShort } from '../src/languages.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(HERE, '..');
@@ -74,12 +75,27 @@ function run(args) {
 
 // ---------------------------------------------------------------- scenarios
 const SCENARIOS = [];
+// EVERY EXPECTATION IS CHECKED, NOT JUST ONE OF THEM.
+//
+// `speaks` used to be a flat list and a scenario counted as having spoken if
+// ANY entry matched. A phrase that could no longer match anything therefore
+// sat green forever, carried by a neighbour — and one did: `No .js/.ts/.html
+// files` stopped being printable the day Java was added, and nothing said so
+// for two releases.
+//
+// But two scenarios legitimately list alternatives — `EPERM` on Windows and
+// `EACCES` everywhere else, an English phrase and its Polish twin — and under
+// a flat "all must match" rule those break. The two cases are indistinguishable
+// while both are written the same way, so they are no longer written the same
+// way: an EXPECTATION is a group, every group must be satisfied, and any one
+// spelling inside a group satisfies it. A deliberate alternative now looks
+// like one, and a dead phrase has nowhere left to hide.
 const scenario = (name, damage, build, speaks, control = pristine) =>
-  SCENARIOS.push({ name, damage, build, speaks, control });
+  SCENARIOS.push({ name, damage, build, speaks: speaks.map(x => (Array.isArray(x) ? x : [x])), control });
 
 scenario('empty directory', 'nothing to read at all',
   () => ['scan', dir('empty')],
-  ['No .js/.ts/.html files', 'nothing to read']);
+  ['No ' + extensionsShort() + ' files', 'nothing to read']);
 
 // THE ONE THIS TOOL IS ABOUT. Files were read, sites were found, and not one
 // peer group was large enough to compare against. Three of the four rules then
@@ -151,7 +167,7 @@ scenario('non-UTF-8 source (cp1250)', 'bytes that are not valid UTF-8',
     fs.writeFileSync(path.join(d, 'cp1250.js'), Buffer.concat([head, bytes, tail]));
     return ['scan', d];
   },
-  ['outside UTF-8', 'spoza UTF-8', 'cp1250.js']);
+  [['outside UTF-8', 'spoza UTF-8'], 'cp1250.js']);
 
 // DENYING A READ IS PLATFORM WORK, AND KNOWING ONLY ONE PLATFORM COST A LAYER.
 //
@@ -202,7 +218,7 @@ scenario('unreadable source file', 'read permission denied',
       return ['scan', d];
     }
   },
-  ['locked.js', 'EPERM', 'EACCES', 'cannot be read']);
+  ['locked.js', ['EPERM', 'EACCES'], 'cannot be read']);
 
 scenario('unreadable config file', 'settings that will not parse',
   () => {
@@ -283,18 +299,23 @@ for (const s of SCENARIOS) {
 
   // The phrase has to DISTINGUISH. Present in both means it says nothing about
   // the damage, however alarming it reads.
-  const said = s.speaks.filter(k => damaged.out.includes(k) && !healthy.out.includes(k));
-  const useless = s.speaks.filter(k => damaged.out.includes(k) && healthy.out.includes(k));
+  const hit = g => g.filter(k => damaged.out.includes(k));
+  const said = s.speaks.filter(g => g.some(k => damaged.out.includes(k) && !healthy.out.includes(k)));
+  const useless = s.speaks.filter(g => hit(g).length && hit(g).every(k => healthy.out.includes(k)));
+  const missing = s.speaks.filter(g => !hit(g).length);
 
   const status = damaged.status;
   const state = (status !== 0 && status !== 1 && status !== 2) ? 'CRASH'
-    : status === 2 ? 'LOUD'
-      : said.length ? 'SPOKE' : 'SILENT';
+    : missing.length ? 'STALE'
+      : status === 2 ? 'LOUD'
+        : said.length ? 'SPOKE' : 'SILENT';
 
   let detail = 'exit ' + status;
-  if (state === 'SPOKE') detail += '   "' + said[0] + '"';
+  if (state === 'STALE')
+    detail += '   never printed: ' + missing.map(g => g.map(k => JSON.stringify(k)).join(' / ')).join(', ');
+  if (state === 'SPOKE') detail += '   "' + hit(said[0])[0] + '"';
   if (state === 'SILENT' && useless.length)
-    detail += '   ("' + useless[0] + '" also printed by a healthy run)';
+    detail += '   ("' + hit(useless[0])[0] + '" also printed by a healthy run)';
   rows.push({ ...s, state, detail });
 }
 

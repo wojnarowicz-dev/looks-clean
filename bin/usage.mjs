@@ -6,6 +6,7 @@
 // with English as the default, the first screen a visitor saw was in Polish.
 // One file, one path through `t()`, and that cannot happen again.
 import { t } from '../src/lang.mjs';
+import { languagesJoined } from '../src/languages.mjs';
 
 export function help(COMMANDS, code = 0) {
   const w = code === 0 ? console.log : console.error;
@@ -24,7 +25,7 @@ export function help(COMMANDS, code = 0) {
   w(t('helpCommands'));
   for (const [name, c] of Object.entries(COMMANDS)) {
     w('  ' + name.padEnd(6) + c.arg);
-    w('         ' + t(c.descKey));
+    w('         ' + t(c.descKey, languagesJoined(t('listConjunction'))));
     if (c.options) w(t('helpOptions', c.options));
   }
   w('');

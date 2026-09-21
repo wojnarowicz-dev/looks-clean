@@ -14,7 +14,7 @@
 dlatego, że nic tam nie ma, czy dlatego, że coś padło — i nie ma jak tego
 poznać z kodu.**
 
-`looks-clean` czyta projekt w JavaScripcie, TypeScripcie albo Javie i szuka miejsc, w
+`looks-clean` czyta projekt w JavaScripcie, TypeScripcie, Javie albo Darcie i szuka miejsc, w
 których awaria jest nieodróżnialna od pustego wyniku: tam, gdzie program mówi
 *nic nie znalazłem* zamiast *nie dałem rady sprawdzić*.
 
@@ -38,7 +38,7 @@ z przodu.
 <!-- lc:claim name=knownAnswersInScope value=6 -->
 <!-- lc:claim name=families value=8 -->
 <!-- lc:claim name=languages value=2 -->
-<!-- lc:claim name=messages value=139 -->
+<!-- lc:claim name=messages value=140 -->
 <!-- lc:claim name=fixtureFindings value=7 -->
 <!-- lc:claim name=fixturePlanted value=4 -->
 <!-- lc:claim name=cleanFindings value=0 -->
@@ -306,8 +306,8 @@ cytowanej linii. Pełny zapis leży w `test/precision.json`.
   nagłówku przebiegu; nigdy nie jest pustym miejscem.
 * **Nie wie, czy zgłoszenie to błąd.** Ta klasa narzędzi ma opublikowaną
   trafność 18,1% (PR-Miner). Czytaj, oceniaj, wyciszaj.
-* **Nie czyta Pythona, Darta, Go ani SQL-a.** Najpierw JavaScript i TypeScript,
-  Java w 0.2.0, każdy po pomiarze — patrz
+* **Nie czyta Pythona, Go, Rusta ani SQL-a.** Najpierw JavaScript i TypeScript,
+  Java w 0.2.0, Dart w 0.3.0, każdy po pomiarze — patrz
   [Dlaczego najpierw JavaScript](#dlaczego-najpierw-javascript).
 * **Nie zastępuje twojego lintera.** Uruchamiaj oba. Pokrywają się dokładnie na
   jednej z czterech reguł, a ta jedna jest tu celowo najsłabsza.
@@ -383,7 +383,7 @@ Wszystko przyjmuje `--lang pl`.
 
 | polecenie | |
 |---|---|
-| `scan <dir>` | cztery reguły na drzewie JavaScript, TypeScript albo Java |
+| `scan <dir>` | cztery reguły na drzewie JavaScript, TypeScript, Java albo Dart |
 | `rank <run.json> [...]` | jedna lista ponad zapisami — co czytać pierwsze |
 | `diff <a.json> <b.json>` | co doszło, co zniknęło, co się zmieniło |
 | `rules` | cztery reguły i to, która potrzebuje sąsiadów |

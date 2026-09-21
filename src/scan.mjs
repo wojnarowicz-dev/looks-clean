@@ -19,6 +19,7 @@ import { noSourcesIn, noPopulation } from './population.mjs';
 import { prepare, diffHeader, resultExit } from './snapshot.mjs';
 import { score } from './rank.mjs';
 import { loadConfig } from './config.mjs';
+import { extensionsShort } from './languages.mjs';
 
 import { RULES, RULE_IDS } from './rules/index.mjs';
 
@@ -52,7 +53,7 @@ const cfg = loadConfig(argv, ROOT);
 // ------------------------------------------------------------------ read
 const files = collectFiles(ROOT, cfg);
 {
-  const missing = noSourcesIn(files.script.length + files.html.length, '.js/.ts/.java/.dart/.html', ROOT);
+  const missing = noSourcesIn(files.script.length + files.html.length, extensionsShort(), ROOT);
   if (missing) {
     console.log(t('scanTitle'));
     console.log(t('root') + ROOT);

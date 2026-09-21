@@ -14,7 +14,7 @@
 empty because there is nothing there or because something broke — and who has no
 way to tell from the code.**
 
-`looks-clean` reads a JavaScript, TypeScript or Java project and finds the places
+`looks-clean` reads a JavaScript, TypeScript, Java or Dart project and finds the places
 where a failure is indistinguishable from an empty result: where the program
 says *I found nothing* instead of *I could not check*.
 
@@ -37,7 +37,7 @@ on this page works the same way with `npx looks-clean` in front of it.
 <!-- lc:claim name=knownAnswersInScope value=6 -->
 <!-- lc:claim name=families value=8 -->
 <!-- lc:claim name=languages value=2 -->
-<!-- lc:claim name=messages value=139 -->
+<!-- lc:claim name=messages value=140 -->
 <!-- lc:claim name=fixtureFindings value=7 -->
 <!-- lc:claim name=fixturePlanted value=4 -->
 <!-- lc:claim name=cleanFindings value=0 -->
@@ -303,8 +303,8 @@ cited line. The full record is in `test/precision.json`.
   and named in the run header; it is never a blank.
 * **It does not know whether a finding is a bug.** This class of tool has a
   published precision of 18.1% (PR-Miner). Read, judge, mute.
-* **It does not read Python, Dart, Go or SQL.** JavaScript and TypeScript first,
-  Java in 0.2.0, each after measuring — see
+* **It does not read Python, Go, Rust or SQL.** JavaScript and TypeScript first,
+  Java in 0.2.0, Dart in 0.3.0, each after measuring — see
   [Why JavaScript first](#why-javascript-first).
 * **It does not replace your linter.** Run both. They overlap on exactly one of
   the four rules, and that one is deliberately the weakest here.
@@ -382,7 +382,7 @@ only what is NEW since last time is shown. After `npm i -g` the command is
 
 | command | |
 |---|---|
-| `scan <dir>` | run the four rules over a JavaScript, TypeScript or Java tree |
+| `scan <dir>` | run the four rules over a JavaScript, TypeScript, Java or Dart tree |
 | `rank <run.json> [...]` | one ranked list across saved runs — what to read first |
 | `diff <a.json> <b.json>` | what appeared, what is gone, what changed |
 | `rules` | the four rules, and which of them needs neighbours |

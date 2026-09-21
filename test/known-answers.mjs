@@ -47,6 +47,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { extensionsShort } from '../src/languages.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.join(HERE, '..');
@@ -212,7 +213,7 @@ const ANSWERS = [
     // result.
     state: 'SKIP',
     material: () => ({
-      skip: 'the checker is SQL tooling, and this build reads .js/.ts/.java/.dart — ' +
+      skip: 'the checker is SQL tooling, and this build reads ' + extensionsShort() + ' — ' +
         'out of language scope, not missing',
     }),
   },
