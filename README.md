@@ -223,9 +223,17 @@ reason.
 | **false alarms** | **3** | **6** |
 | checked | 20 | 20 |
 
-Material: the 21-file `managers/` directory of a Java desktop application, 89
-findings reported, default settings. Sample: seed `looks-clean-java-0.2.0`,
-recorded in `test/precision.json`, so the same twenty come back without me.
+Material: one 21-file directory of a Java desktop application, 89 findings
+reported, default settings. Sample: seed `looks-clean-java-0.2.0`, recorded in
+`test/precision.json`, so the same twenty come back without me.
+
+**These are sites in a closed-source product: the locations are withheld, the
+verdicts and causes are published.** Fourteen of the twenty are real defects in
+something that is sold and most are still unfixed, so a file and a line beside
+each would be a public bug list for somebody else's customers. Each site
+carries a stable identifier instead, and the map back to the code lives with
+the product rather than here. What was judged, by which rule, and why a false
+alarm was false is all in `test/precision.json` and can be argued with.
 
 Three verdicts rather than two. A site can be a defect, a **deliberate** choice
 the author made behind a comment and would not thank you for changing, or a

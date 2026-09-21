@@ -102,7 +102,7 @@ export const CONSTRUCTION_TYPES = new Set([
   'object_creation_expression', 'array_creation_expression',
 ]);
 
-/** See values.mjs: `ProjectOpResult.ok(x)` names its outcome in the last segment. */
+/** See values.mjs: `SomeResult.ok(x)` names its outcome in the last segment. */
 export const OUTCOME_TAIL = true;
 
 /** A cast names its type first and its value second; a parenthesis holds only the value. */

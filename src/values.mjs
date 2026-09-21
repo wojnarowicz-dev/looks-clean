@@ -110,8 +110,8 @@ export function classify(node, syn) {
     const callee = syn.calleeText(n);
     if (OUTCOME_CALLS.test(callee)) return { kind: 'tagged', value: null };
     // WHERE THE TYPE NAME COMES FIRST, THE TAIL IS THE OUTCOME. Java spells the
-    // same idea as `ProjectOpResult.ok(x)` or `new ProjectOpResult.Ok(x)`, so
-    // the segment that names the outcome is the last one, not the whole callee.
+    // same idea as `SomeResult.ok(x)` or `new SomeResult.Ok(x)`, so the segment
+    // that names the outcome is the last one, not the whole callee.
     // JavaScript does NOT get this: there `logger.error(...)` would read as a
     // tagged answer, and a well-behaved handler would stop counting as one.
     if (syn.OUTCOME_TAIL && OUTCOME_CALLS.test(callee.split('.').pop()))

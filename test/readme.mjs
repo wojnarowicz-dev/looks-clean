@@ -212,8 +212,8 @@ for (const smp of precision.languageSamples || []) {
     const overCaused = rows.filter(r => r.verdict !== 'noise' && r.cause);
     check(tag + ': every false alarm names a cause, and only those',
       uncaused.length === 0 && overCaused.length === 0,
-      uncaused.length ? 'uncaused: ' + uncaused[0].site
-        : overCaused.length ? 'caused but not noise: ' + overCaused[0].site
+      uncaused.length ? 'uncaused: ' + uncaused[0].ref
+        : overCaused.length ? 'caused but not noise: ' + overCaused[0].ref
           : Object.keys(part.causes).length + ' causes');
     const tally = {};
     for (const r of rows) if (r.cause) tally[r.cause] = (tally[r.cause] || 0) + 1;

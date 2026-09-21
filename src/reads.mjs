@@ -74,11 +74,11 @@ const JS_FAMILIES = [
 //             those cannot match.
 //
 // PROJECT WRAPPERS ARE NOT IN HERE EITHER. The tree this was measured against
-// routes much of its IO through a `SafeIo` helper, and adding it would have
-// been fitting the tool to one codebase in order to pass one test. The cost is
-// stated rather than hidden: handlers standing over a project's own IO wrapper
-// have no family, so they join no population and are neither reported nor
-// counted as well-behaved neighbours.
+// routes much of its IO through a project-local retrying helper, and naming it
+// here would have been fitting the tool to one codebase in order to pass one
+// test. The cost is stated rather than hidden: handlers standing over a
+// project's own IO wrapper have no family, so they join no population and are
+// neither reported nor counted as well-behaved neighbours.
 const JAVA_FAMILIES = [
   ['net', /^(HttpClient|HttpRequest)\.|\.(send|sendAsync|openConnection|openStream)$/],
   ['proc', /\.waitFor$|^Runtime\.getRuntime\.exec$/],

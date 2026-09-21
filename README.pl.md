@@ -225,9 +225,17 @@ człowiek naprawdę widzi. Te dwie liczby są różne i obie są tutaj właśnie
 | **fałszywe alarmy** | **3** | **6** |
 | sprawdzonych | 20 | 20 |
 
-Materiał: 21-plikowy katalog `managers/` aplikacji desktopowej w Javie, 89
-zgłoszeń, ustawienia domyślne. Próbka: ziarno `looks-clean-java-0.2.0`, zapisane
-w `test/precision.json`, żeby ta sama dwudziestka wróciła beze mnie.
+Materiał: jeden 21-plikowy katalog aplikacji desktopowej w Javie, 89 zgłoszeń,
+ustawienia domyślne. Próbka: ziarno `looks-clean-java-0.2.0`, zapisane w
+`test/precision.json`, żeby ta sama dwudziestka wróciła beze mnie.
+
+**To są miejsca w programie o zamkniętym źródle: lokalizacje są zatrzymane,
+werdykty i przyczyny opublikowane.** Czternaście z dwudziestu to prawdziwe
+usterki w czymś, co jest sprzedawane, i większość jest nienaprawiona — plik
+i linia przy każdej byłyby publiczną listą błędów dla cudzych klientów. Każde
+miejsce niesie zamiast tego stały identyfikator, a mapa z powrotem do kodu leży
+przy produkcie, nie tutaj. Co oceniono, którą regułą i dlaczego fałszywy alarm
+był fałszywy — to wszystko jest w `test/precision.json` i da się z tym spierać.
 
 Trzy werdykty zamiast dwóch. Miejsce może być usterką, **celowym** wyborem,
 który autor zapisał w komentarzu i nie podziękuje za zmianę, albo zgłoszeniem,

@@ -92,7 +92,7 @@ const JAVA_FAMILY_EXAMPLES = [
   ['fs', 'Files.readString', 'Files'],
   ['fs', 'Files.readAttributes', 'Files'],
   ['fs', 'newFileInputStream', 'newFileInputStream'],
-  ['net', 'klient.send', 'klient'],
+  ['net', 'client.send', 'client'],
   ['net', 'HttpClient.newBuilder.build', 'HttpClient'],
   ['net', 'url.openStream', 'url'],
   ['proc', 'process.waitFor', 'process'],
@@ -112,8 +112,8 @@ const JAVA_NOT_READS = [
   ['Instant.parse', 'Instant', 'the same, and why Java has no parse family'],
   ['newArrayList', 'newArrayList', 'a constructor that opens nothing'],
   ['list.remove', 'list', 'a collection, not a store'],
-  ['SafeIo.readStringUtf8WithRetry', 'SafeIo', 'a project IO wrapper: deliberately absent, see reads.mjs'],
-  ['logoFile.exists', 'logoFile', 'java.io.File methods are left out, so this under-reports'],
+  ['Io.readStringWithRetry', 'Io', 'a project-local IO wrapper: deliberately absent, see reads.mjs'],
+  ['someFile.exists', 'someFile', 'java.io.File methods are left out, so this under-reports'],
 ];
 
 for (const [family, callee, head] of FAMILY_EXAMPLES) {
@@ -310,8 +310,8 @@ const JAVA_AMBIGUOUS = [
 ];
 
 const JAVA_TAGGED = [
-  'new ProjectOpResult.Ok(ref)',
-  'ProjectOpResult.failure(msg)',
+  'new SomeResult.Ok(ref)',
+  'SomeResult.failure(msg)',
   'Result.error(e)',
 ];
 

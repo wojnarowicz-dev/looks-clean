@@ -39,12 +39,12 @@
 // different question — "do this file's four handlers disagree" — and went
 // silent when they agreed, while the directory around them disagreed loudly.
 //
-// Measured on FileManager.java of a Java tree: four handlers over the file
-// system, all four collapsing a failed read to an empty list. Four is enough to
-// speak, so the ladder stopped there, found no convention, and said nothing —
-// while one directory out, 3 of 23 handlers on the same family carry their
-// outcome. The deviation was real, the evidence was one rung away, and the
-// tool had already stopped looking.
+// Measured on one file of a Java tree: four handlers over the file system, all
+// four collapsing a failed read to an empty list. Four is enough to speak, so
+// the ladder stopped there, found no convention, and said nothing — while one
+// directory out, 3 of 23 handlers on the same family carry their outcome. The
+// deviation was real, the evidence was one rung away, and the tool had already
+// stopped looking.
 //
 // WHAT A CONVENTION IS belongs to the rule, not here: a deadline for rule 3, a
 // trace for rule 1, a distinguishable answer for rules 2 and 4. Each rule hands

@@ -724,7 +724,7 @@
       "findingsAfter": 77,
       "identical": true,
       "verdict": "No JavaScript finding changed, label included, and the four golden runs matched field by field.",
-      "belowTheFindings": "Findings are the tip, so the attribution itself was counted underneath them. Of 215 JavaScript handlers standing over a read, 1 changed: uptime-kuma extra/release/generate-changelog.mjs:251, which lost its family because both JSON.parse calls in its try sit in a nested try of their own (lines 226-236). Read at the cited lines, the new answer is the right one. In Java 7 of 45 changed, one of them to no family at all: ProjectFileBundle.java:400, whose every Files.isRegularFile is wrapped in `catch (Exception ignored)`.",
+      "belowTheFindings": "Findings are the tip, so the attribution itself was counted underneath them. Of 215 JavaScript handlers standing over a read, 1 changed: uptime-kuma extra/release/generate-changelog.mjs:251, which lost its family because both JSON.parse calls in its try sit in a nested try of their own (lines 226-236). Read at the cited lines, the new answer is the right one. In Java 7 of 45 changed, one of them to no family at all: a handler whose body wraps every file probe in a catch of its own, so the outer one was being credited with reads it cannot see. Read at the line, the new answer is the right one; the location is withheld for the reason languageSamples gives.",
       "projects": [
         {
           "name": "got",
@@ -792,8 +792,8 @@
       "language": "java",
       "toolVersion": "0.1.0",
       "commit": "9186236",
-      "material": "VideoAnalyzer before its commit 6bf5971, main/src/main/java/.../components/managers — 21 files, not the author's own code but the author's own project",
-      "run": "scan <managers> --config test/fixtures/golden.config.json, default layer and minpop, no other flags",
+      "material": "VideoAnalyzer before its commit 6bf5971 — 21 files of one directory, not the author's own code but the author's own product",
+      "run": "scan <that directory> --config test/fixtures/golden.config.json, default layer and minpop, no other flags",
       "reported": 89,
       "method": "TWO SAMPLES OF TWENTY, KEPT APART. The first is drawn at random, because a reader runs the tool and reads the whole list, not its top; the second is the first twenty in the printed order, which is how the JavaScript measurements were taken, so the two methods can be compared rather than averaged.",
       "seed": "looks-clean-java-0.2.0",
@@ -836,151 +836,131 @@
         "findings": [
           {
             "rank": 6,
-            "id": "a9ef85916e7b",
+            "ref": "J-20",
             "rule": "same-answer",
-            "site": "ProjectFileBundle.java:572",
             "verdict": "real",
-            "note": "the empty path is `if (!firstFile.exists()) return null` at L428 — a real \"found nothing\", and the catch answers the same null"
+            "note": "the empty path is a real \"found nothing\" branch and the catch answers the same value — a genuine collapse"
           },
           {
             "rank": 9,
-            "id": "39920e822270",
+            "ref": "J-25",
             "rule": "same-answer",
-            "site": "ProjectFileBundle.java:810",
             "verdict": "noise",
             "cause": "argument-guard-read-as-the-empty-path",
-            "note": "the cited empty path is L797, `if (mediaSourcesTxt == null) return null` — a parameter guard. The javadoc above documents the deliberate split: NoSuchFile -> FALSE, other failures -> null"
+            "note": "the cited empty path is a parameter guard; the method documents the deliberate split between \"absent\" and \"could not read\" that it was reported for collapsing"
           },
           {
             "rank": 10,
-            "id": "9ff6cd5dfacb",
+            "ref": "J-27",
             "rule": "same-answer",
-            "site": "ProjectFileBundle.java:1537",
             "verdict": "noise",
             "cause": "void-function-has-no-answer-to-collide",
-            "note": "deleteIfEmpty is void; every return is `undefined`, so the two paths are identical by construction and the claim is vacuous. The handler does log"
+            "note": "a void method: every return is the same by construction, so the claim is vacuous. The handler does log"
           },
           {
             "rank": 17,
-            "id": "04a95e402ee7",
+            "ref": "J-11",
             "rule": "same-answer",
-            "site": "ProjectBundleRef.java:43",
             "verdict": "real"
           },
           {
             "rank": 24,
-            "id": "dece277b671e~4",
+            "ref": "J-17",
             "rule": "swallowed",
-            "site": "ProjectFileBundle.java:524",
             "verdict": "deliberate",
-            "note": "one try per optional bundle slot, applied uniformly to seven of them — a structural decision, not an oversight"
+            "note": "one try per optional slot, applied uniformly to seven of them — a structural decision, not an oversight"
           },
           {
             "rank": 27,
-            "id": "dece277b671e~7",
+            "ref": "J-18",
             "rule": "swallowed",
-            "site": "ProjectFileBundle.java:542",
             "verdict": "deliberate"
           },
           {
             "rank": 30,
-            "id": "98b3cb1d9af6",
+            "ref": "J-21",
             "rule": "swallowed",
-            "site": "ProjectFileBundle.java:649",
             "verdict": "real"
           },
           {
             "rank": 31,
-            "id": "80da69e4f4b0",
+            "ref": "J-22",
             "rule": "swallowed",
-            "site": "ProjectFileBundle.java:664",
             "verdict": "real"
           },
           {
             "rank": 40,
-            "id": "4385a6003ddd",
+            "ref": "J-28",
             "rule": "swallowed",
-            "site": "ProjectFileBundle.java:1595",
             "verdict": "real"
           },
           {
             "rank": 42,
-            "id": "64991d641790",
+            "ref": "J-30",
             "rule": "same-answer",
-            "site": "ProjectLifecycleCoordinator.java:126",
             "verdict": "noise",
             "cause": "void-function-has-no-answer-to-collide",
-            "note": "recordOpenedProject is void, same as above. The site IS a defect and rule 1 reports it; rule 4 has nothing to say about it"
+            "note": "a void method, same as above. The site IS a defect and rule 1 reports it; rule 4 has nothing to say about it"
           },
           {
             "rank": 43,
-            "id": "ea8c62b067f0",
+            "ref": "J-31",
             "rule": "same-answer",
-            "site": "ProjectLifecycleCoordinator.java:172",
             "verdict": "real"
           },
           {
             "rank": 44,
-            "id": "534dc07963f9",
+            "ref": "J-32",
             "rule": "same-answer",
-            "site": "ProjectLifecycleCoordinator.java:240",
             "verdict": "real"
           },
           {
             "rank": 45,
-            "id": "2f98fc07eb7c",
+            "ref": "J-33",
             "rule": "swallowed",
-            "site": "ProjectRestartData.java:95",
             "verdict": "real"
           },
           {
             "rank": 48,
-            "id": "07257c33f10d",
+            "ref": "J-05",
             "rule": "default-on-error",
-            "site": "FileManager.java:80",
             "verdict": "real",
-            "note": "the sibling of the B7 defect: a file that cannot be stat-ed silently drops out of the listing"
+            "note": "the sibling of the known-answer defect: a file that cannot be stat-ed silently drops out of the listing"
           },
           {
             "rank": 53,
-            "id": "635081021ef7~2",
+            "ref": "J-12",
             "rule": "default-on-error",
-            "site": "ProjectBundleRef.java:73",
             "verdict": "real"
           },
           {
             "rank": 59,
-            "id": "4983683d0791~5",
+            "ref": "J-15",
             "rule": "swallowed",
-            "site": "ProjectFileBundle.java:392",
             "verdict": "deliberate"
           },
           {
             "rank": 63,
-            "id": "822c32641b9b",
+            "ref": "J-19",
             "rule": "swallowed",
-            "site": "ProjectFileBundle.java:571",
             "verdict": "real"
           },
           {
             "rank": 69,
-            "id": "36b1de612d8e",
+            "ref": "J-26",
             "rule": "swallowed",
-            "site": "ProjectFileBundle.java:889",
             "verdict": "real"
           },
           {
             "rank": 74,
-            "id": "8927523c4814~2",
+            "ref": "J-29",
             "rule": "swallowed",
-            "site": "ProjectFileBundle.java:1636",
             "verdict": "real"
           },
           {
             "rank": 89,
-            "id": "3ad0c2890bb0",
+            "ref": "J-34",
             "rule": "swallowed",
-            "site": "ProjectRestartData.java:138",
             "verdict": "real"
           }
         ]
@@ -1017,155 +997,135 @@
         "findings": [
           {
             "rank": 1,
-            "id": "502a4b7ef7cc",
+            "ref": "J-02",
             "rule": "same-answer",
-            "site": "EdgeCaseManager.java:164",
             "verdict": "real"
           },
           {
             "rank": 2,
-            "id": "0e92957d2b1f",
+            "ref": "J-04",
             "rule": "swallowed",
-            "site": "FileManager.java:79",
             "verdict": "real"
           },
           {
             "rank": 3,
-            "id": "0e92957d2b1f~2",
+            "ref": "J-06",
             "rule": "swallowed",
-            "site": "FileManager.java:108",
             "verdict": "real"
           },
           {
             "rank": 4,
-            "id": "fa47d0c5dcaa",
+            "ref": "J-14",
             "rule": "same-answer",
-            "site": "ProjectFileBundle.java:263",
             "verdict": "noise",
             "cause": "argument-guard-read-as-the-empty-path",
-            "note": "rule 4 collided the parameter guard at L252 with the catch; rule 2 is right about the same site, because false at L258 genuinely also means \"no bundle\""
+            "note": "rule 4 collided a parameter guard with the catch; rule 2 is right about the same site, because its value genuinely also means \"nothing there\""
           },
           {
             "rank": 5,
-            "id": "f54d4c30c60e",
+            "ref": "J-16",
             "rule": "same-answer",
-            "site": "ProjectFileBundle.java:401",
             "verdict": "noise",
             "cause": "argument-guard-read-as-the-empty-path"
           },
           {
             "rank": 6,
-            "id": "a9ef85916e7b",
+            "ref": "J-20",
             "rule": "same-answer",
-            "site": "ProjectFileBundle.java:572",
             "verdict": "real",
-            "note": "the empty path is `if (!firstFile.exists()) return null` at L428 — a real \"found nothing\", and the catch answers the same null"
+            "note": "the empty path is a real \"found nothing\" branch and the catch answers the same value — a genuine collapse"
           },
           {
             "rank": 7,
-            "id": "587676bb503a",
+            "ref": "J-23",
             "rule": "same-answer",
-            "site": "ProjectFileBundle.java:713",
             "verdict": "noise",
             "cause": "argument-guard-read-as-the-empty-path"
           },
           {
             "rank": 8,
-            "id": "59b6aa1a3b3f",
+            "ref": "J-24",
             "rule": "same-answer",
-            "site": "ProjectFileBundle.java:758",
             "verdict": "noise",
             "cause": "argument-guard-read-as-the-empty-path"
           },
           {
             "rank": 9,
-            "id": "39920e822270",
+            "ref": "J-25",
             "rule": "same-answer",
-            "site": "ProjectFileBundle.java:810",
             "verdict": "noise",
             "cause": "argument-guard-read-as-the-empty-path",
-            "note": "the cited empty path is L797, `if (mediaSourcesTxt == null) return null` — a parameter guard. The javadoc above documents the deliberate split: NoSuchFile -> FALSE, other failures -> null"
+            "note": "the cited empty path is a parameter guard; the method documents the deliberate split between \"absent\" and \"could not read\" that it was reported for collapsing"
           },
           {
             "rank": 10,
-            "id": "9ff6cd5dfacb",
+            "ref": "J-27",
             "rule": "same-answer",
-            "site": "ProjectFileBundle.java:1537",
             "verdict": "noise",
             "cause": "void-function-has-no-answer-to-collide",
-            "note": "deleteIfEmpty is void; every return is `undefined`, so the two paths are identical by construction and the claim is vacuous. The handler does log"
+            "note": "a void method: every return is the same by construction, so the claim is vacuous. The handler does log"
           },
           {
             "rank": 11,
-            "id": "f2284c2b6487",
+            "ref": "J-01",
             "rule": "swallowed",
-            "site": "EdgeCaseManager.java:126",
             "verdict": "real"
           },
           {
             "rank": 12,
-            "id": "c4119b4c0c7e",
+            "ref": "J-03",
             "rule": "swallowed",
-            "site": "EdgeCaseManager.java:185",
             "verdict": "real"
           },
           {
             "rank": 13,
-            "id": "9070569d45f1",
+            "ref": "J-07",
             "rule": "swallowed",
-            "site": "MemoryOptimizer.java:134",
             "verdict": "deliberate",
-            "note": "shutdown path, comment explains why a failure here must not stop the shutdown"
+            "note": "a shutdown path; a comment explains why a failure there must not stop the shutdown"
           },
           {
             "rank": 14,
-            "id": "9070569d45f1~2",
+            "ref": "J-08",
             "rule": "swallowed",
-            "site": "MemoryOptimizer.java:140",
             "verdict": "deliberate"
           },
           {
             "rank": 15,
-            "id": "c5e39cd7060c",
+            "ref": "J-09",
             "rule": "swallowed",
-            "site": "MemoryOptimizer.java:160",
             "verdict": "deliberate"
           },
           {
             "rank": 16,
-            "id": "650c636e3dc3",
+            "ref": "J-10",
             "rule": "swallowed",
-            "site": "MemoryOptimizer.java:347",
             "verdict": "deliberate"
           },
           {
             "rank": 17,
-            "id": "04a95e402ee7",
+            "ref": "J-11",
             "rule": "same-answer",
-            "site": "ProjectBundleRef.java:43",
             "verdict": "real"
           },
           {
             "rank": 18,
-            "id": "9697e8fca6a2",
+            "ref": "J-12",
             "rule": "same-answer",
-            "site": "ProjectBundleRef.java:73",
             "verdict": "real"
           },
           {
             "rank": 19,
-            "id": "bc03481a9683",
+            "ref": "J-13",
             "rule": "swallowed",
-            "site": "ProjectFileBundle.java:185",
             "verdict": "deliberate"
           },
           {
             "rank": 20,
-            "id": "e432a1dbdbfb",
+            "ref": "J-14",
             "rule": "default-on-error",
-            "site": "ProjectFileBundle.java:263",
             "verdict": "real",
-            "note": "rule 4 collided the parameter guard at L252 with the catch; rule 2 is right about the same site, because false at L258 genuinely also means \"no bundle\""
+            "note": "rule 4 collided a parameter guard with the catch; rule 2 is right about the same site, because its value genuinely also means \"nothing there\""
           }
         ]
       },
@@ -1178,7 +1138,8 @@
         "A parameter or precondition guard is not the empty path. `if (x == null) return null` answers a caller who asked a malformed question; colliding it with a catch that answers null produces a finding about nothing. Five of the six false alarms in the first sample are this.",
         "A void function has no answer, so its two paths cannot differ. Rule 4 has nothing to say about one and should not speak."
       ],
-      "notMeasured": "Whether the 53 findings outside both samples hold up. Twenty checked at random out of eighty-nine is twenty checked."
+      "notMeasured": "Whether the 53 findings outside both samples hold up. Twenty checked at random out of eighty-nine is twenty checked.",
+      "locations": "THE VERDICTS ARE PUBLISHED, THE LOCATIONS ARE NOT. Fourteen of the twenty in the random sample are real defects in a product that is sold, and most of them are still unfixed; a file and a line beside each would be a public bug list for somebody else's customers to read. So every site carries a stable identifier J-01..J-34 instead. What a finding was judged, by which rule, and why a false alarm was false is all here and unchanged — the sample can be argued with. Only where it points is withheld.\nThe identifiers are assigned in alphabetical order of the location, so the numbering carries neither the verdict nor the rank, and consecutive ones may share a file. The map from identifier to file and line lives with the product, outside this repository, at docs/looks-clean-sample-map.json in the checkout that answer 7 already names — so anybody holding that checkout can still check every row against the code."
     }
   ]
 }

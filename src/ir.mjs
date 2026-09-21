@@ -376,13 +376,13 @@ export function analyse(tree, file, off = 0, syn) {
   // operation the outer catch is standing over — and because it is nested it is
   // also the LAST read in source order, so it won the label every time.
   //
-  // Measured on the defect this was found with. FileManager.getFilesFromFolder
-  // opens `Files.newDirectoryStream` in a try-with-resources and, inside the
-  // stream, calls `Files.readAttributes` in a try of its own. The report named
-  // the handler after readAttributes, whose IOException it never sees, and told
-  // the reader to go and look at the wrong call. Both are `fs`, so nothing moved
-  // except the sentence the reader is asked to act on — which is the part of a
-  // finding that has to be true before any of the rest is worth anything.
+  // Measured on the defect this was found with. A method opens a directory
+  // stream in a try-with-resources and, inside the stream, reads each entry's
+  // attributes in a try of its own. The report named the handler after the
+  // inner read, whose IOException it never sees, and told the reader to go and
+  // look at the wrong call. Both are `fs`, so nothing moved except the sentence
+  // the reader is asked to act on — which is the part of a finding that has to
+  // be true before any of the rest is worth anything.
   //
   // Containment is STRICT, because Java writes two catch clauses over one try
   // and neither of them shields the other.
