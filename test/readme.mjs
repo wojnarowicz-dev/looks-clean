@@ -165,12 +165,28 @@ for (const c of precision.changeChecks || []) {
   check(tag + ': the verdict matches the rows',
     c.identical === c.projects.every(p => p.identical),
     c.identical ? 'identical' : 'changed');
-  // A climb that never happened anywhere is the reason nothing moved. If one
-  // ever does happen, this record stops being an explanation and has to be
-  // re-measured rather than re-read.
-  const climbed = c.projects.reduce((a, p) => a + p.ofThoseTheDirectoryHadOne, 0);
-  check(tag + ': the explanation matches the count',
-    !c.identical || climbed === 0, climbed + ' climb(s) available');
+  // A record may carry its own explanatory count, and where it does the count
+  // has to agree with the verdict. Asked of every record, this would fail on a
+  // field the next one has no reason to carry, and the failure would look real.
+  if (c.projects.some(p => 'ofThoseTheDirectoryHadOne' in p)) {
+    const climbed = c.projects.reduce((a, p) => a + (p.ofThoseTheDirectoryHadOne || 0), 0);
+    check(tag + ': nothing moved because no rung above had an answer',
+      !c.identical || climbed === 0, climbed + ' climb(s) available');
+  }
+  // Where a record counts what moved BELOW the findings, an identical verdict is
+  // not contradicted by a non-zero count — a changed attribution that reported
+  // nothing either way is exactly what happened here — but the count must be
+  // declared rather than left to be assumed zero.
+  if (c.projects.some(p => 'attributionsMoved' in p)) {
+    const undeclared = c.projects.filter(p => !('attributionsMoved' in p && 'handlersOverARead' in p));
+    const impossible = c.projects.filter(p => p.attributionsMoved > p.handlersOverARead);
+    check(tag + ': every project counts what moved underneath',
+      undeclared.length === 0 && impossible.length === 0,
+      undeclared.length ? 'undeclared: ' + undeclared[0].name
+        : impossible.length ? 'more moved than exist: ' + impossible[0].name
+          : c.projects.reduce((a, p) => a + p.attributionsMoved, 0) + ' of ' +
+            c.projects.reduce((a, p) => a + p.handlersOverARead, 0));
+  }
 }
 
 // THE TWO RUNS MUST STAY TWO RUNS. Collapsing them into one figure is the

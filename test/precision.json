@@ -702,6 +702,86 @@
         }
       ],
       "notMeasured": "This says nothing about precision in Java, where the change does move findings. That is measured separately before 0.2.0 ships."
+    },
+    {
+      "id": "2026-09-21-a-read-under-its-own-handler",
+      "date": "2026-09-21",
+      "change": "A read wrapped in a nested try is no longer attributed to the handler outside it. The outer catch never sees that failure, and because the nested call is also the last read in source order it was winning the label every time.",
+      "why": "The report named the wrong call. FileManager.getFilesFromFolder opens Files.newDirectoryStream and, inside the stream, calls Files.readAttributes in a try of its own; the finding told the reader to go and look at readAttributes, whose IOException it never sees. A finding whose sentence is false is not a weaker finding, it is a wrong one.",
+      "method": "Both recorded measurements' material, all six projects at the revisions they name, default settings, before and after. Compared finding by finding INCLUDING the label and the family, because the label is what this change is about. The recorded golden runs were re-run unchanged.",
+      "comparedOn": [
+        "id",
+        "file",
+        "line",
+        "rule",
+        "layerKind",
+        "peers",
+        "safe",
+        "family",
+        "label"
+      ],
+      "findingsBefore": 77,
+      "findingsAfter": 77,
+      "identical": true,
+      "verdict": "No JavaScript finding changed, label included, and the four golden runs matched field by field.",
+      "belowTheFindings": "Findings are the tip, so the attribution itself was counted underneath them. Of 215 JavaScript handlers standing over a read, 1 changed: uptime-kuma extra/release/generate-changelog.mjs:251, which lost its family because both JSON.parse calls in its try sit in a nested try of their own (lines 226-236). Read at the cited lines, the new answer is the right one. In Java 7 of 45 changed, one of them to no family at all: ProjectFileBundle.java:400, whose every Files.isRegularFile is wrapped in `catch (Exception ignored)`.",
+      "projects": [
+        {
+          "name": "got",
+          "revision": "687eb7dcc100ea3e548ebba227173b886789e670",
+          "findingsBefore": 9,
+          "findingsAfter": 9,
+          "identical": true,
+          "handlersOverARead": 1,
+          "attributionsMoved": 0
+        },
+        {
+          "name": "uptime-kuma",
+          "revision": "d4fb7f38d77c09e266a859178940c0b9d88d0594",
+          "findingsBefore": 28,
+          "findingsAfter": 28,
+          "identical": true,
+          "handlersOverARead": 170,
+          "attributionsMoved": 1
+        },
+        {
+          "name": "eslint",
+          "revision": "c8326608e710e670beaf982501aed80ea104919a",
+          "findingsBefore": 13,
+          "findingsAfter": 13,
+          "identical": true,
+          "handlersOverARead": 9,
+          "attributionsMoved": 0
+        },
+        {
+          "name": "node-red",
+          "revision": "d5d883d",
+          "findingsBefore": 0,
+          "findingsAfter": 0,
+          "identical": true,
+          "handlersOverARead": 0,
+          "attributionsMoved": 0
+        },
+        {
+          "name": "verdaccio",
+          "revision": "b27212f",
+          "findingsBefore": 27,
+          "findingsAfter": 27,
+          "identical": true,
+          "handlersOverARead": 34,
+          "attributionsMoved": 0
+        },
+        {
+          "name": "fastify",
+          "revision": "ac28821",
+          "findingsBefore": 0,
+          "findingsAfter": 0,
+          "identical": true,
+          "handlersOverARead": 1,
+          "attributionsMoved": 0
+        }
+      ],
+      "notMeasured": "Whether the seven Java attributions that moved are each right was checked by reading two of them, not all seven. The Java precision sample taken before 0.2.0 reads findings, and these sit underneath findings."
     }
   ]
 }

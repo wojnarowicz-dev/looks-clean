@@ -370,10 +370,34 @@ export function analyse(tree, file, off = 0, syn) {
   // Which read was this handler handling? Answered from the read list rather
   // than by re-walking, so a handler and a read can never disagree about what
   // family an operation belongs to.
+  //
+  // A READ UNDER ITS OWN HANDLER DOES NOT REACH THIS ONE. The failure of a call
+  // wrapped in a nested try never arrives at the outer catch, so it is not the
+  // operation the outer catch is standing over — and because it is nested it is
+  // also the LAST read in source order, so it won the label every time.
+  //
+  // Measured on the defect this was found with. FileManager.getFilesFromFolder
+  // opens `Files.newDirectoryStream` in a try-with-resources and, inside the
+  // stream, calls `Files.readAttributes` in a try of its own. The report named
+  // the handler after readAttributes, whose IOException it never sees, and told
+  // the reader to go and look at the wrong call. Both are `fs`, so nothing moved
+  // except the sentence the reader is asked to act on — which is the part of a
+  // finding that has to be true before any of the rest is worth anything.
+  //
+  // Containment is STRICT, because Java writes two catch clauses over one try
+  // and neither of them shields the other.
+  const shields = handlers.filter(x => x.guardedFrom !== null && x.guardedTo !== null);
+  const shielded = (h, r) => shields.some(s =>
+    s !== h &&
+    s.guardedFrom >= h.guardedFrom && s.guardedTo <= h.guardedTo &&
+    (s.guardedFrom > h.guardedFrom || s.guardedTo < h.guardedTo) &&
+    r.startIndex >= s.guardedFrom && r.endIndex <= s.guardedTo);
+
   for (const h of handlers) {
     let candidates = [];
     if (h.guardedFrom !== null && h.guardedTo !== null) {
-      candidates = reads.filter(r => r.startIndex >= h.guardedFrom && r.endIndex <= h.guardedTo);
+      candidates = reads.filter(r =>
+        r.startIndex >= h.guardedFrom && r.endIndex <= h.guardedTo && !shielded(h, r));
     } else if (h.kind === 'error-branch' && h.fn) {
       // The error name was destructured out of a read a few lines above. Find
       // the read whose own statement introduced it.
