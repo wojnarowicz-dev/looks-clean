@@ -40,6 +40,19 @@ export const STATEMENT_TYPES = new Set([
 
 export const IDENT_TYPES = new Set(['identifier']);
 
+// THE SPELLING THAT MADE A HANDLER LOOK SILENT. `'failed: $e'` does not hold
+// an `identifier`; the grammar calls the interpolated name
+// `identifier_dollar_escaped`. A handler printing the very error it caught
+// therefore read as one that never touched it. `${e.message}` was always
+// visible, because the braced form holds a plain identifier — so the defect
+// depended on which of two equivalent spellings the author had used.
+export const BINDING_REF_TYPES = new Set(['identifier', 'identifier_dollar_escaped']);
+
+// Dart's own console call, and Flutter's. Neither matches the shared
+// vocabulary, which was written for `console.*` and the JavaScript logging
+// packages. `print` is listed here and nowhere else for that reason.
+export const TRACE_NAMES = new Set(['debugPrint', 'print']);
+
 /** `throw` and `rethrow` are expressions here, which is why this is a table. */
 export const RETHROW_TYPES = new Set(['throw_expression', 'rethrow_expression']);
 

@@ -242,12 +242,13 @@ export function analyse(tree, file, off = 0, syn) {
     walk(body, n => {
       if (n.type === 'comment') return;
       if (syn.STATEMENT_TYPES.has(n.type)) { e.statements++; e.empty = false; }
-      if (n.type === 'identifier' && binding && n.text === binding) e.usesBinding = true;
+      if (syn.BINDING_REF_TYPES.has(n.type) && binding && n.text === binding) e.usesBinding = true;
       if (syn.RETHROW_TYPES.has(n.type)) e.rethrows = true;
       if (syn.isCall(n)) {
         const c = syn.calleeText(n);
         const tail = c.split('.').pop();
-        if (TRACE_HEAD.test(c) || TRACE_TAIL.test(tail) || TRACE_SETTER.test(tail)) e.logs = true;
+        if (TRACE_HEAD.test(c) || TRACE_TAIL.test(tail) || TRACE_SETTER.test(tail) ||
+          syn.TRACE_NAMES.has(tail)) e.logs = true;
         if (/^(Promise\.reject|reject)$/.test(c)) e.rethrows = true;
       }
       if (n.type === 'assignment_expression') {

@@ -48,6 +48,18 @@ export const STATEMENT_TYPES = new Set([
 
 export const IDENT_TYPES = new Set(['identifier', 'field_access']);
 
+// Narrower than IDENT_TYPES on purpose — see the note in js.mjs. A
+// `field_access` node carries the whole `a.b` as its text, so it could not
+// match a binding name anyway, but the question being asked is different and
+// the set says so.
+export const BINDING_REF_TYPES = new Set(['identifier']);
+
+// Java writes its console output as `System.out.println`, whose tail is
+// `println`, and that is NOT added here. Adding it would move the Java
+// numbers, and this release is measured on the promise that they do not.
+// Recorded as a known gap instead.
+export const TRACE_NAMES = new Set();
+
 export const BLOCK_TYPE = 'block';
 
 /** Where the condition of an `if` is kept. Dart keeps it by position instead. */

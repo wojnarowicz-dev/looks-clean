@@ -40,6 +40,18 @@ export const IDENT_TYPES = new Set([
   'identifier', 'property_identifier', 'shorthand_property_identifier',
 ]);
 
+// A SEPARATE, NARROWER SET, AND DELIBERATELY NOT IDENT_TYPES. Asking "does
+// this handler touch its error binding" is not the same question as "what
+// names appear in this condition". `catch (e) { send({ e: 1 }) }` holds a
+// property_identifier spelled `e` that has nothing to do with the binding,
+// and counting it would call that handler one that uses the failure.
+export const BINDING_REF_TYPES = new Set(['identifier']);
+
+// Calls this language spells as output that the shared trace vocabulary in
+// ir.mjs does not already cover. `print` is NOT one of them here: in
+// JavaScript it is a page instruction, not a log.
+export const TRACE_NAMES = new Set();
+
 export const BLOCK_TYPE = 'statement_block';
 
 /** Where the condition of an `if` is kept. Dart keeps it by position instead. */

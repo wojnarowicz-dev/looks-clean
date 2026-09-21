@@ -326,6 +326,25 @@ for (const [label, syn] of [['js', JS], ['java', JAVA], ['dart', DART]]) {
     unexercised.length ? 'unexercised: ' + unexercised.join(', ') : covered.size + ' spellings');
 }
 
+// ONE INTERFACE, THREE MODULES, AND NOTHING WAS CHECKING THAT. ir.mjs reaches
+// into whatever `syn` it is handed — `syn.TRACE_NAMES.has(tail)` and the rest —
+// so a member added to one module and forgotten in another throws on the first
+// file of that language and on no test here. It fails loudly rather than
+// quietly, which is the right failure, but it fails in someone's repository
+// rather than in this run.
+//
+// Found while widening the interface by two members by hand across three files.
+{
+  const mods = [['js', JS], ['java', JAVA], ['dart', DART]];
+  const names = m => Object.keys(m).sort();
+  const union = [...new Set(mods.flatMap(([, m]) => names(m)))].sort();
+  for (const [label, m] of mods) {
+    const missing = union.filter(k => !(k in m));
+    check(label + ' speaks the whole syntax interface', missing.length === 0,
+      missing.length ? 'missing: ' + missing.join(', ') : union.length + ' members');
+  }
+}
+
 // ---------------------------------------------------------------- 3. answers
 const parser = await parserFor('vocabulary.ts');
 const javaParser = await parserFor('Vocabulary.java');
@@ -536,6 +555,47 @@ check('a bare return is undefined', classify(null, JS).kind === 'ambiguous' &&
   check('a guard on an argument is marked as one',
     !!guarded && guarded.returns.some(r => r.path === 'normal' && r.guard),
     guarded ? guarded.returns.filter(r => r.guard).length + ' guard return(s)' : 'no function');
+}
+
+// THE TRACE A HANDLER LEAVES, IN DART'S OWN SPELLINGS. Rule 1 asks one
+// question — did this handler use the failure at all — and answers it from
+// `effects`. Two Dart spellings were invisible to that question, so handlers
+// that printed the error they caught were reported as swallowing it. Measured
+// 2026-09-21: five of six false alarms on a Flutter application were this.
+//
+// The control matters more than the four positives. A vocabulary widened until
+// everything leaves a trace reports nothing and passes every case above it.
+{
+  const dartParser = await parserFor('fixture.dart');
+  const source = fs.readFileSync(path.join(HERE, 'fixtures', 'dart', 'traces.dart'), 'utf8');
+  const tree = dartParser.parse(source);
+  check('the trace fixture parses', !tree.rootNode.hasError, 'no ERROR node');
+
+  const ir = analyse(tree, 'traces.dart', 0, DART);
+  const fx = n => ir.handlers.find(h => h.fnName === n);
+
+  // An interpolated binding is an identifier_dollar_escaped, not an identifier.
+  check('dart trace: an interpolated binding is used',
+    !!fx('interpolated') && fx('interpolated').effects.usesBinding === true,
+    'usesBinding=' + (fx('interpolated') || {}).effects?.usesBinding);
+  check('dart trace: a braced interpolation still uses the binding',
+    !!fx('braced') && fx('braced').effects.usesBinding === true,
+    'usesBinding=' + (fx('braced') || {}).effects?.usesBinding);
+
+  // debugPrint is Flutter's console; print is Dart's.
+  check('dart trace: debugPrint is a log',
+    !!fx('noDetail') && fx('noDetail').effects.logs === true,
+    'logs=' + (fx('noDetail') || {}).effects?.logs);
+  check('dart trace: print is a log',
+    !!fx('plainPrint') && fx('plainPrint').effects.logs === true,
+    'logs=' + (fx('plainPrint') || {}).effects?.logs);
+
+  // THE CONTROL.
+  const silent = fx('silent');
+  check('dart trace: a handler that says nothing still says nothing',
+    !!silent && !silent.effects.usesBinding && !silent.effects.logs &&
+    !silent.effects.rethrows && !silent.effects.assignsErrorTarget,
+    silent ? 'no trace, as it should be' : 'no handler');
 }
 
 // ---------------------------------------------------------------- 5. normalise
