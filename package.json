@@ -1,7 +1,7 @@
 {
   "name": "looks-clean",
   "version": "0.3.0",
-  "description": "Finds places where a failure is indistinguishable from an empty result — by comparing a site with its own neighbours, not with a rulebook. JavaScript, TypeScript and Java.",
+  "description": "Finds places where a failure is indistinguishable from an empty result — by comparing a site with its own neighbours, not with a rulebook. JavaScript, TypeScript, Java and Dart.",
   "license": "MIT",
   "author": "Aleksander Wojnarowicz",
   "type": "module",
@@ -51,6 +51,7 @@
     "javascript",
     "typescript",
     "java",
+    "dart",
     "tree-sitter"
   ],
   "dependencies": {

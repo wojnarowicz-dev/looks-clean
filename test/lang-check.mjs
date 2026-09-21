@@ -209,6 +209,28 @@ if (bypasses.length) failed++;
   check('the help names every language that is read', unnamed.length === 0,
     unnamed.length ? 'missing: ' + unnamed.join(', ') : LANGUAGES.length + ' languages');
 
+  // THE FIRST SENTENCE ANYBODY READS IS NOT IN THIS REPOSITORY'S VOICE AT ALL.
+  // It is the package description, which npm prints above everything else, and
+  // it said "JavaScript, TypeScript and Java" for a release after Dart shipped.
+  // The keyword list had the same hole.
+  //
+  // These cannot be BUILT from the list the way a message can: package.json is
+  // data npm reads, not code this tool runs. So they are checked instead, which
+  // is the weaker of the two and the only one available — and being the weaker
+  // one is exactly why it is worth having.
+  {
+    const pkg = JSON.parse(fs.readFileSync(path.join(REPO, 'package.json'), 'utf8'));
+    const names = LANGUAGES.map(l => l.name);
+    const absent = names.filter(nm => !pkg.description.includes(nm));
+    check('the package description names every language', absent.length === 0,
+      absent.length ? 'missing: ' + absent.join(', ') : names.length + ' languages');
+
+    const kw = pkg.keywords.map(k => k.toLowerCase());
+    const unkeyed = names.filter(nm => !kw.includes(nm.toLowerCase()));
+    check('the keywords name every language', unkeyed.length === 0,
+      unkeyed.length ? 'missing: ' + unkeyed.join(', ') : names.length + ' keywords');
+  }
+
   const hint = t('noSourcesHint', extensionsSpaced(), pagesSpaced());
   const unlisted = [...SOURCE_EXTENSIONS, ...PAGE_EXTENSIONS].filter(e => !hint.includes('.' + e));
   check('the "nothing to read" sentence names every extension', unlisted.length === 0,
