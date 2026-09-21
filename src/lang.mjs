@@ -269,8 +269,8 @@ const S = {
   'rulesNeedsPop': { en: 'needs neighbours', pl: 'potrzebuje sasiadow' },
   'rulesNoPop': { en: 'stands alone — the weakest', pl: 'sama z siebie — najslabsza' },
   'rulesFooter': {
-    en: 'The comparison, not the rule, is the point. A linter says "an empty catch is bad".\nThis says "saveDream has a time limit, saveProfile does not, and they are the same layer".',
-    pl: 'Chodzi o porownanie, nie o regule. Linter mowi "pusty catch to zle".\nTo mowi "saveDream ma limit czasu, saveProfile nie ma, a to ta sama warstwa".' },
+    en: 'The comparison, not the rule, is the point. A linter says "an empty catch is bad".\nThis says "saveOrder has a time limit, saveProfile does not, and they are the same layer".',
+    pl: 'Chodzi o porownanie, nie o regule. Linter mowi "pusty catch to zle".\nTo mowi "saveOrder ma limit czasu, saveProfile nie ma, a to ta sama warstwa".' },
   'ruleDesc.swallowed': {
     en: 'A handler that swallows the failure with no log and no trace in the interface.',
     pl: 'Obsluga, ktora polyka blad bez logu i bez sladu w interfejsie.' },

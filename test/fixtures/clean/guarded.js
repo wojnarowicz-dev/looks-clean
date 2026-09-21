@@ -9,7 +9,7 @@
 // the report would tell a reader who had already done the work that they had
 // not done it.
 
-async function saveDream(url, body) {
+async function saveOrder(url, body) {
   try {
     const res = await fetch(url + '/dream', {
       method: 'POST',
@@ -18,7 +18,7 @@ async function saveDream(url, body) {
     });
     return res.json();
   } catch (e) {
-    throw new Error('saveDream failed: ' + e.message);
+    throw new Error('saveOrder failed: ' + e.message);
   }
 }
 
@@ -64,4 +64,4 @@ async function saveTag(url, body) {
   }
 }
 
-module.exports = { saveDream, saveProfile, saveNote, saveTag };
+module.exports = { saveOrder, saveProfile, saveNote, saveTag };

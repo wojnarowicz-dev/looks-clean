@@ -452,7 +452,7 @@ problem.
 
 Two sites are neighbours when they are **in the same place** and belong to the
 **same family of operation** — supabase, net, db, proc, fs, parse, storage,
-assets or a dynamic import. Both halves matter: `saveDream` and `saveProfile`
+assets or a dynamic import. Both halves matter: `saveOrder` and `saveProfile`
 in one service file are written by the same hand under the same constraints,
 and a `fetch` is not comparable with a `JSON.parse`.
 

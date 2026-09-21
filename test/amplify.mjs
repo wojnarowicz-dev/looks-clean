@@ -119,7 +119,7 @@ function amplifies(name, rule, direction, perturb, file) {
 }
 
 // ---------------------------------------------------------------- rule 3
-amplifies('take saveDream\'s deadline away', 'no-timeout', 'up', dir =>
+amplifies('take saveOrder\'s deadline away', 'no-timeout', 'up', dir =>
   edit(dir, 'net.js', "    signal: AbortSignal.timeout(8000),\n  });\n  return res.json();\n}\n\n// THE PLANTED DEVIATION",
     "  });\n  return res.json();\n}\n\n// THE PLANTED DEVIATION"));
 
@@ -163,7 +163,7 @@ amplifies('make readEntries throw on failure', 'same-answer', 'gone', dir =>
     // the default minpop of three, so no comparison is possible.
     const net = fs.readFileSync(path.join(dir, 'net.js'), 'utf8');
     const cut = net.slice(0, net.indexOf('async function saveNote')) +
-      'module.exports = { saveDream, saveProfile };\n';
+      'module.exports = { saveOrder, saveProfile };\n';
     fs.writeFileSync(path.join(dir, 'net.js'), cut);
     const got = measure(dir);
 

@@ -8,7 +8,7 @@
 // WHAT A LAYER IS. Two sites are neighbours when they are in the same place and
 // belong to the same family of operation. Both halves matter:
 //
-//   * Same place. `saveDream` and `saveProfile` sitting in one service file are
+//   * Same place. `saveOrder` and `saveProfile` sitting in one service file are
 //     written by the same hand for the same caller under the same constraints.
 //     If one has a deadline and the other has none, that is a difference
 //     somebody has to have decided, and most of the time nobody did.

@@ -453,7 +453,7 @@ stronie wejścia.
 
 Dwa miejsca są sąsiadami, gdy leżą **w tym samym miejscu** i należą do **tej
 samej rodziny operacji** — supabase, net, db, proc, fs, parse, storage,
-assets albo dynamiczny import. Obie połowy mają znaczenie: `saveDream`
+assets albo dynamiczny import. Obie połowy mają znaczenie: `saveOrder`
 i `saveProfile` w jednym pliku serwisu pisze ta sama ręka pod tymi samymi
 ograniczeniami, a `fetch` nie jest porównywalny z `JSON.parse`.
 

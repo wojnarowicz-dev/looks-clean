@@ -11,7 +11,7 @@
 // either ignored or, worse, obeyed with a number pulled out of the air. The
 // sentence worth saying is the comparative one:
 //
-//     saveDream has a time limit, saveProfile does not, and they are the same layer.
+//     saveOrder has a time limit, saveProfile does not, and they are the same layer.
 //
 // That claim can only be made by a tool that has read the rest of the project,
 // and it comes with its own fix: whatever limit the neighbours use.

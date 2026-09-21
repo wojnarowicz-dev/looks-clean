@@ -26,12 +26,12 @@ too. The ranking merges them into one entry — one site, one decision — and k
 
 ## `project/net.js` — rule 3, `no-timeout`
 
-Four writes over the network. `saveDream`, `saveNote` and `saveTag` carry a
+Four writes over the network. `saveOrder`, `saveNote` and `saveTag` carry a
 deadline (two by `AbortSignal.timeout`, one by an `AbortController` fired from a
 `setTimeout` three lines up — both shapes must be recognised). **`saveProfile`
 carries none.**
 
-This is the fixture for the sentence the tool exists to say: *saveDream has a
+This is the fixture for the sentence the tool exists to say: *saveOrder has a
 time limit, saveProfile does not, and they are the same layer.*
 
 ## `project/store.js` — rule 4, `same-answer`

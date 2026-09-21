@@ -6,10 +6,10 @@
 // is the shape of failure this whole tool is named after.
 //
 // This is the sentence no linter can produce, because it is not about saveProfile
-// on its own: saveDream has a time limit, saveProfile does not, and they are the
+// on its own: saveOrder has a time limit, saveProfile does not, and they are the
 // same layer.
 
-async function saveDream(url, body) {
+async function saveOrder(url, body) {
   const res = await fetch(url + '/dream', {
     method: 'POST',
     body: JSON.stringify(body),
@@ -47,4 +47,4 @@ async function saveTag(url, body) {
   return res.json();
 }
 
-module.exports = { saveDream, saveProfile, saveNote, saveTag };
+module.exports = { saveOrder, saveProfile, saveNote, saveTag };
