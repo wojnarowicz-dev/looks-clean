@@ -22,6 +22,15 @@ import { familyOf, timeoutMarker, FAMILY_NAMES, FAMILY_NAMES_BY_LANG, TIMEOUT_MA
 import { classify, normaliseText } from '../src/values.mjs';
 import * as JS from '../src/syntax/js.mjs';
 import * as JAVA from '../src/syntax/java.mjs';
+import * as DART from '../src/syntax/dart.mjs';
+import { analyse } from '../src/ir.mjs';
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const REPO = path.join(HERE, '..');
 
 let failed = 0;
 const check = (name, ok, detail) => {
@@ -124,6 +133,38 @@ for (const [callee, head, why] of NOT_READS) {
   const got = familyOf(callee, head, 'js');
   check('js not a read: ' + callee, got === null, got === null ? why.slice(0, 46) : 'read as ' + got);
 }
+// DART. The supabase rows are the same matcher the JavaScript table uses,
+// reached through a Dart chain — which is the measurement that said this
+// language needed one row rather than a table.
+const DART_FAMILY_EXAMPLES = [
+  ['supabase', 'supabase.from.select', 'supabase'],
+  ['supabase', 'supabase.functions.invoke', 'supabase'],
+  ['supabase', 'supabase.auth.signOut', 'supabase'],
+  ['supabase', 'client.functions.invoke', 'client'],
+  ['storage', 'SharedPreferences.getInstance', 'SharedPreferences'],
+  ['storage', 'prefs.getString', 'prefs'],
+  ['storage', 'prefs.setString', 'prefs'],
+];
+
+const DART_NOT_READS = [
+  ['supabase.from', 'supabase', 'the start of a chain, not an operation'],
+  ['setState', 'setState', 'a widget rebuild — the commonest call in the material'],
+  ['Navigator.of.push', 'Navigator', 'navigation, not a read'],
+  ['debugPrint', 'debugPrint', 'writing to the console'],
+  ['jsonDecode', 'jsonDecode', 'a string the program already holds: the Java decision, applied again'],
+  ['Duration', 'Duration', 'a value, and it appears beside almost every animation'],
+  ['notifyListeners', 'notifyListeners', 'a notification to this program'],
+];
+
+for (const [family, callee, head] of DART_FAMILY_EXAMPLES) {
+  const got = familyOf(callee, head, 'dart');
+  check('dart read: ' + callee, got === family, got === family ? family : 'read as ' + got);
+}
+for (const [callee, head, why] of DART_NOT_READS) {
+  const got = familyOf(callee, head, 'dart');
+  check('dart not a read: ' + callee, got === null, got === null ? why.slice(0, 44) : 'read as ' + got);
+}
+
 for (const [family, callee, head] of JAVA_FAMILY_EXAMPLES) {
   const got = familyOf(callee, head, 'java');
   check('java read: ' + callee, got === family, got === family ? family : 'read as ' + got);
@@ -154,7 +195,7 @@ check('javascript spellings are not read as Java',
 // Every family each table can produce must be exercised above. A family with no
 // example is a row nothing tests.
 for (const [lang, names] of Object.entries(FAMILY_NAMES_BY_LANG)) {
-  const rows = lang === 'js' ? FAMILY_EXAMPLES : JAVA_FAMILY_EXAMPLES;
+  const rows = { js: FAMILY_EXAMPLES, java: JAVA_FAMILY_EXAMPLES, dart: DART_FAMILY_EXAMPLES }[lang];
   const covered = new Set(rows.map(e => e[0]));
   const unexercised = names.filter(f => !covered.has(f));
   check('every ' + lang + ' family has an example', unexercised.length === 0,
@@ -245,6 +286,12 @@ const ABSENT = [
   ['java', 'x.isBlank()', 'isBlank()'],
   ['java', 'x.trim().isEmpty()', 'trimmed empty'],
   ['java', 'x.length()==0', 'length 0'],
+  ['dart', 'x==null', '== null'],
+  ['dart', 'null==x', 'null =='],
+  ['dart', 'x.isEmpty', 'isEmpty'],
+  ['dart', 'x.trim().isEmpty', 'trimmed empty'],
+  ['dart', 'x.length==0', 'length 0'],
+  ['dart', "x==''", 'empty string'],
 ];
 
 const NOT_ABSENT = [
@@ -255,21 +302,24 @@ const NOT_ABSENT = [
   ['java', 'x.isPresent()', 'the opposite of empty'],
   ['java', 'x.size()<4', 'a size the caller chose, not an absence'],
   ['java', 'x.exists()', 'a question about the disk, not about the argument'],
+  ['dart', 'x!=null', 'a test for PRESENCE'],
+  ['dart', 'x.isNotEmpty', 'the opposite, and one word longer'],
+  ['dart', 'x.isEmpty()', 'isEmpty is a getter in Dart; with parentheses it is something else'],
 ];
 
 for (const [lang, operand, label] of ABSENT) {
-  const syn = lang === 'js' ? JS : JAVA;
+  const syn = { js: JS, java: JAVA, dart: DART }[lang];
   const hit = syn.ABSENCE_TESTS.find(([, re]) => re.test(operand));
   check(lang + ' absent: ' + operand, !!hit && hit[0] === label,
     hit ? 'matched ' + hit[0] : 'matched nothing');
 }
 for (const [lang, operand, why] of NOT_ABSENT) {
-  const syn = lang === 'js' ? JS : JAVA;
+  const syn = { js: JS, java: JAVA, dart: DART }[lang];
   const hit = syn.ABSENCE_TESTS.find(([, re]) => re.test(operand));
   check(lang + ' not absent: ' + operand, !hit, hit ? 'matched ' + hit[0] : why.slice(0, 44));
 }
 
-for (const [label, syn] of [['js', JS], ['java', JAVA]]) {
+for (const [label, syn] of [['js', JS], ['java', JAVA], ['dart', DART]]) {
   const covered = new Set(ABSENT.filter(r => r[0] === label).map(r => r[2]));
   const unexercised = syn.ABSENCE_TESTS.map(([n]) => n).filter(n => !covered.has(n));
   check('every ' + label + ' absence test has an example', unexercised.length === 0,
@@ -425,7 +475,70 @@ for (const [label, syn, rows] of [['js', JS, AMBIGUOUS], ['java', JAVA, JAVA_AMB
 check('a bare return is undefined', classify(null, JS).kind === 'ambiguous' &&
   classify(null, JS).value === 'undefined', '');
 
-// ---------------------------------------------------------------- 4. normalise
+// ------------------------------------------- 4. the grammar we carry ourselves
+//
+// THE ONE DEPENDENCY THAT IS NOT A DEPENDENCY. The Dart grammar is a file in
+// vendor/ rather than a package, because the package that publishes it compiles
+// a native binding on install and ships no prebuild for it. A carried file has
+// its own failure mode: nobody notices when it is replaced, truncated, or
+// normalised to LF by a checkout. So its bytes are hashed against the record
+// kept beside it, and then it is made to do its job on a fixture.
+{
+  const record = JSON.parse(fs.readFileSync(path.join(REPO, 'vendor', 'grammars.json'), 'utf8'));
+  const row = record.grammars.find(g => g.language === 'dart');
+  check('the carried grammar is recorded', !!row, row ? row.source + '@' + row.version : 'no row');
+
+  const file = path.join(REPO, 'vendor', row.file);
+  const bytes = fs.readFileSync(file);
+  const sha = crypto.createHash('sha256').update(bytes).digest('hex');
+  check('the carried grammar is the recorded one', sha === row.sha256 && bytes.length === row.bytes,
+    sha === row.sha256 ? bytes.length + ' bytes' : 'sha256 ' + sha.slice(0, 16) + '… vs ' + row.sha256.slice(0, 16) + '…');
+  check('its licence travels with it',
+    fs.existsSync(path.join(REPO, 'vendor', 'tree-sitter-dart.LICENSE')), 'MIT, beside the file');
+
+  // AND THEN IT HAS TO PARSE. A file whose hash is right and whose contents are
+  // not a usable grammar would pass every check above.
+  const dartParser = await parserFor('fixture.dart');
+  const source = fs.readFileSync(path.join(HERE, 'fixtures', 'dart', 'handlers.dart'), 'utf8');
+  const tree = dartParser.parse(source);
+  check('the carried grammar parses Dart', !tree.rootNode.hasError, 'no ERROR node');
+
+  const ir = analyse(tree, 'handlers.dart', 0, DART);
+  check('it finds the functions', ir.functions.length >= 5, ir.functions.length + ' functions');
+
+  // THE THREE SHAPES, AND THE THIRD IS THE POINT. `on X { }` carries no
+  // catch_clause node at all; a vocabulary keying on the node type sees nothing
+  // there and reports the file clean. 31 of them stand in the material this was
+  // measured against.
+  const named = n => ir.handlers.filter(h => h.fnName === n);
+  check('`catch (e)` is a handler', named('plain').length === 1,
+    named('plain').length + ' found');
+  check('`on X catch (e)` is a handler', named('typed').length === 1,
+    named('typed').length + ' found');
+  check('`on X { }` is a handler, with no binding',
+    named('untyped').length === 1 && named('untyped')[0].binding === null,
+    named('untyped').length + ' found, binding=' + (named('untyped')[0] || {}).binding);
+
+  // The body is the sibling of the clause, so a handler found with an empty
+  // body is a vocabulary that descended where it should have stepped sideways.
+  check('a handler body is found beside the clause',
+    ir.handlers.every(h => h.snippet && h.snippet.length > 1),
+    ir.handlers.length + ' handlers, all with a body');
+
+  // `rethrow` is an expression in Dart. Asked for a statement, every handler
+  // that hands the failure on reads as one that swallows it.
+  check('`rethrow` counts as handing the failure on',
+    named('handsOn').length === 1 && named('handsOn')[0].effects.rethrows,
+    'rethrows=' + (named('handsOn')[0] || {}).effects?.rethrows);
+
+  // And the guard above the try is not the empty path.
+  const guarded = ir.functions.find(f => f.name === 'guarded');
+  check('a guard on an argument is marked as one',
+    !!guarded && guarded.returns.some(r => r.path === 'normal' && r.guard),
+    guarded ? guarded.returns.filter(r => r.guard).length + ' guard return(s)' : 'no function');
+}
+
+// ---------------------------------------------------------------- 5. normalise
 //
 // The text normaliser is what makes two spellings of one answer compare equal.
 // If it ever stops stripping something, rule 4 quietly finds less and no count

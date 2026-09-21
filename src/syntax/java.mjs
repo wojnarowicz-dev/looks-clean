@@ -49,6 +49,12 @@ export const STATEMENT_TYPES = new Set([
 export const IDENT_TYPES = new Set(['identifier', 'field_access']);
 
 export const BLOCK_TYPE = 'block';
+
+/** Where the condition of an `if` is kept. Dart keeps it by position instead. */
+export const conditionOf = node => node.childForFieldName('condition');
+
+/** How this language spells "hand the failure on". Dart spells it as an expression. */
+export const RETHROW_TYPES = new Set(['throw_statement']);
 export const isBlock = node => !!node && node.type === 'block';
 
 export const isCall = node =>

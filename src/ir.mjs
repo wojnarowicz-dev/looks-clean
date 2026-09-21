@@ -167,7 +167,7 @@ export function analyse(tree, file, off = 0, syn) {
 
     // ---- if (error) { ... }
     if (node.type === 'if_statement') {
-      const cond = node.childForFieldName('condition');
+      const cond = syn.conditionOf(node);
       const names = errorNamesInCondition(cond, syn);
       if (names) {
         const cons = node.childForFieldName('consequence');
@@ -243,7 +243,7 @@ export function analyse(tree, file, off = 0, syn) {
       if (n.type === 'comment') return;
       if (syn.STATEMENT_TYPES.has(n.type)) { e.statements++; e.empty = false; }
       if (n.type === 'identifier' && binding && n.text === binding) e.usesBinding = true;
-      if (n.type === 'throw_statement') e.rethrows = true;
+      if (syn.RETHROW_TYPES.has(n.type)) e.rethrows = true;
       if (syn.isCall(n)) {
         const c = syn.calleeText(n);
         const tail = c.split('.').pop();
@@ -341,7 +341,7 @@ export function analyse(tree, file, off = 0, syn) {
       if (n.type === 'if_statement') {
         const cons = n.childForFieldName('consequence');
         if (cons && node.startIndex >= cons.startIndex && node.endIndex <= cons.endIndex) {
-          cond = n.childForFieldName('condition');
+          cond = syn.conditionOf(n);
           break;
         }
       }
@@ -381,7 +381,7 @@ export function analyse(tree, file, off = 0, syn) {
       if (n.type === 'if_statement') {
         const cons = n.childForFieldName('consequence');
         if (cons && node.startIndex >= cons.startIndex && node.endIndex <= cons.endIndex &&
-          errorNamesInCondition(n.childForFieldName('condition'), syn)) return 'failure';
+          errorNamesInCondition(syn.conditionOf(n), syn)) return 'failure';
       }
       n = n.parent;
     }

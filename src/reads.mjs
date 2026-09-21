@@ -85,7 +85,25 @@ const JAVA_FAMILIES = [
   ['fs', /^Files\.|^new(FileInputStream|FileOutputStream|FileReader|FileWriter|RandomAccessFile)$/],
 ];
 
-const FAMILIES = { js: JS_FAMILIES, java: JAVA_FAMILIES };
+// DART: ONE ROW, AND THE REST WAS ALREADY BUILT.
+//
+// Counted over 78 files of a Flutter application: 32 external reads, and every
+// one of them Supabase. No http, no dio, no Process, no asset bundle, no
+// isolate — so no rows for any of them. The Supabase matcher below is reached
+// by shape rather than by name, and a Dart chain reduces to exactly the shape
+// it already expects: `supabase.from.select`, `supabase.functions.invoke`,
+// `supabase.auth.signOut`. Opening it to Dart was the whole of that work.
+//
+// SharedPreferences is the one row Dart adds: 7 calls, a read off the disk
+// that can fail, and the same kind of store `localStorage` already stands for
+// in JavaScript. `jsonDecode` is NOT here, and that is the Java decision
+// applied again rather than re-argued: it parses a string the program is
+// already holding, which is not an external read however often it throws.
+const DART_FAMILIES = [
+  ['storage', /^SharedPreferences\.|\.(getString|setString|getBool|setBool|getInt|setInt|getDouble|setDouble|getStringList|setStringList)$/],
+];
+
+const FAMILIES = { js: JS_FAMILIES, java: JAVA_FAMILIES, dart: DART_FAMILIES };
 
 /**
  * The family of a call, or null when the call is not a read.
@@ -122,7 +140,9 @@ export function familyOf(calleeText, chainHead, lang) {
   const callee = String(calleeText || '').replace(/\s+/g, '');
   if (!callee) return null;
 
-  if (lang === 'js') {
+  // The shape, not the language: a supabase chain reads the same in both, and
+  // Java has no client of its own so it is left out rather than guessed at.
+  if (lang === 'js' || lang === 'dart') {
     const segments = callee.split('.');
     const tail = segments[segments.length - 1];
     if (SUPABASE_TAIL.test(tail) &&
@@ -198,6 +218,7 @@ export const FAMILY_NAMES = ['supabase', 'net', 'db', 'proc', 'fs', 'parse', 'st
 export const FAMILY_NAMES_BY_LANG = {
   js: ['supabase', ...new Set(JS_FAMILIES.map(([name]) => name))],
   java: [...new Set(JAVA_FAMILIES.map(([name]) => name))],
+  dart: ['supabase', ...new Set(DART_FAMILIES.map(([name]) => name))],
 };
 
 /** Every marker name, so the vocabulary layer can insist each one has an example. */

@@ -14,3 +14,9 @@
 # The recordings are data the golden layer compares byte for byte. They are
 # already LF in the repository and must stay that way on every checkout.
 *.json text eol=lf
+
+# THE VENDORED GRAMMAR IS A COMPILED ARTEFACT and git's text heuristic must not
+# be given the chance to guess at it. Its sha256 is recorded in
+# vendor/grammars.json and asserted by the vocabulary layer, so a normalisation
+# would fail the suite — loudly, but one step after the damage was done.
+*.wasm binary

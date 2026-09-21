@@ -19,17 +19,30 @@
 // started from its own directory — that is, never after `npm i -g`.
 import { Parser, Language } from 'web-tree-sitter';
 import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 import * as JS from './syntax/js.mjs';
 import * as JAVA from './syntax/java.mjs';
+import * as DART from './syntax/dart.mjs';
 
 const require = createRequire(import.meta.url);
+// THE DART GRAMMAR IS CARRIED, NOT INSTALLED, and that is a decision rather
+// than a shortcut. It is published only inside a package whose install script
+// compiles a native binding it ships no prebuild for, so `npm i` fails on any
+// machine without Python and a C++ toolchain — measured, on Windows. Declaring
+// it optional would have installed cleanly and left Dart quietly unavailable,
+// which is this tool's own subject matter. The file, its licence, its version
+// and its sha256 are in vendor/, and the vocabulary layer refuses to go on if
+// the bytes are not the ones recorded there.
+const VENDOR = f => fileURLToPath(new URL('../vendor/' + f, import.meta.url));
+
 const WASM = {
   ts: require.resolve('tree-sitter-typescript/tree-sitter-typescript.wasm'),
   tsx: require.resolve('tree-sitter-typescript/tree-sitter-tsx.wasm'),
   java: require.resolve('tree-sitter-java/tree-sitter-java.wasm'),
+  dart: VENDOR('tree-sitter-dart.wasm'),
 };
 
-const SYNTAX = { ts: JS, tsx: JS, java: JAVA };
+const SYNTAX = { ts: JS, tsx: JS, java: JAVA, dart: DART };
 
 const cache = new Map();
 
@@ -46,6 +59,7 @@ async function get(kind) {
 /** Which grammar a file needs. .jsx and .tsx carry JSX; everything else does not. */
 export function grammarFor(file) {
   if (/\.java$/i.test(file)) return 'java';
+  if (/\.dart$/i.test(file)) return 'dart';
   return /\.(tsx|jsx)$/i.test(file) ? 'tsx' : 'ts';
 }
 

@@ -1,0 +1,21 @@
+{
+  "_what": "Grammars that are carried in this repository rather than installed. One file, one reason, and the reason is written down: the Dart grammar is published only inside a package whose install script compiles a native binding it does not ship a prebuild for, so `npm i` fails on any machine without Python and a C++ toolchain. An optional dependency would have installed cleanly and left Dart quietly unavailable, which is the defect this tool reports in other people's code.",
+  "_theCost": "Every user of npx pays for what is in the package, including the ones who never open a Dart file. 1.07 MB is the price of the language, paid once per install rather than 23.9 MB of a seventeen-grammar collection paid by everyone.",
+  "_howToCheck": "test/vocabulary.mjs hashes the file and refuses to go on if it is not the one recorded here, then loads it and parses a fixture. A swapped or truncated grammar fails there rather than at the first scan of somebody's project.",
+  "grammars": [
+    {
+      "file": "tree-sitter-dart.wasm",
+      "language": "dart",
+      "source": "tree-sitter-dart-orchard",
+      "version": "0.7.0",
+      "registry": "https://registry.npmjs.org/tree-sitter-dart-orchard/-/tree-sitter-dart-orchard-0.7.0.tgz",
+      "repository": "https://codeberg.org/grammar-orchard/tree-sitter-dart-orchard",
+      "licence": "MIT, kept beside the file as tree-sitter-dart.LICENSE",
+      "abi": 14,
+      "bytes": 1067587,
+      "sha256": "3a341be09f0acff1be64ae13c23af2c05ee8744acf2441eac69651b8b79f9b54",
+      "takenOn": "2026-09-21",
+      "whyNotTheDependency": "tree-sitter-dart-orchard@0.7.0 declares `install: node-gyp-build` and ships no prebuilds, so installing it compiles from source. Measured on Windows: `gyp ERR! Could not find any Python installation to use`. Only the .wasm is used; the native binding never is."
+    }
+  ]
+}
