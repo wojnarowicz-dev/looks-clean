@@ -27,6 +27,7 @@
 // Paths default to siblings of this repository and are overridable:
 //     LC_ODD   an odd-one-out checkout          (answers 1 and 5)
 //     LC_WEB   a VideoAnalyzerProWeb checkout   (answer 2)
+//     LC_JAVA  a VideoAnalyzer checkout         (answer 7)
 // An absolute path would carry one machine's account name into a public
 // repository and would be wrong for everyone else anyway.
 //
@@ -37,7 +38,7 @@
 // which turns the defaults off.
 //
 // That is a real cost and it is written down rather than quietly absorbed: two
-// of the six defects this tool was built to find would not be found by somebody
+// of the seven defects this tool was built to find would not be found by somebody
 // running it with no configuration. The exclusion is still right — twelve of the
 // thirty findings read by hand were test code — but "right on balance" is not
 // "free", and a contract that hid the difference would be the wrong contract.
@@ -55,6 +56,7 @@ const NEXT_TO_REPO = path.join(REPO, '..');
 
 const ODD = process.env.LC_ODD || path.join(NEXT_TO_REPO, 'odd-one-out');
 const WEB = process.env.LC_WEB || path.join(NEXT_TO_REPO, 'VideoAnalyzerProWeb');
+const JAVA = process.env.LC_JAVA || path.join(NEXT_TO_REPO, 'VideoAudioAnalyzer');
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'lc-known-'));
 
 const exists = p => { try { return fs.existsSync(p); } catch { return false; } };
@@ -126,9 +128,38 @@ const webBeforeFix = () => once('web', () => {
   }
 });
 
+// The material for answer 7 is again the revision BEFORE the fix. 6bf5971 is
+// "Defekt B7: nieudany odczyt listy pokazuje 'nie dalo sie odczytac'"; its parent
+// still returns an empty list from both catch blocks.
+//
+// THE WHOLE DIRECTORY IS EXTRACTED, NOT THE ONE FILE, and that is the contract
+// rather than convenience. Inside FileManager.java every file-system handler
+// collapses a failed read to an empty list, so the file agrees with itself and
+// there is nothing to deviate from. The deviation is one rung out.
+const javaBeforeFix = () => once('java', () => {
+  if (!exists(JAVA)) return { skip: 'no checkout at ' + JAVA + ' — set LC_JAVA' };
+  const out = path.join(TMP, 'java-before');
+  const inside = ['main', 'src', 'main', 'java', 'com', 'example', 'main', 'app', 'components', 'managers'];
+  try {
+    fs.mkdirSync(out, { recursive: true });
+    const tar = execFileSync('git', ['archive', '6bf5971^', inside.join('/')],
+      { cwd: JAVA, maxBuffer: 5e8 });
+    // Relative name, from inside `out`, for the reason answer 2 gives above.
+    fs.writeFileSync(path.join(out, 'java.tar'), tar);
+    execFileSync('tar', ['-xf', 'java.tar'], { cwd: out, stdio: 'ignore' });
+    fs.rmSync(path.join(out, 'java.tar'), { force: true });
+    const dir = path.join(out, ...inside);
+    if (!exists(dir)) return { skip: 'extracted 6bf5971^ but no managers directory inside it' };
+    return { dir };
+  } catch (e) {
+    return { skip: 'extracting 6bf5971^ failed — ' +
+      String(e.message).replace(/[\r\n]+/g, ' ').slice(0, 120) };
+  }
+});
+
 const reconstructed = () => ({ dir: path.join(HERE, 'fixtures', 'known') });
 
-// ------------------------------------------------------------------ the six
+// ------------------------------------------------------------------ the answers
 const ANSWERS = [
   {
     id: 1,
@@ -181,7 +212,7 @@ const ANSWERS = [
     // result.
     state: 'SKIP',
     material: () => ({
-      skip: 'the checker is not JavaScript, and this build reads .js/.ts only — ' +
+      skip: 'the checker is SQL tooling, and this build reads .js/.ts/.java — ' +
         'out of language scope, not missing',
     }),
   },
@@ -223,6 +254,32 @@ const ANSWERS = [
         return { ok: false, detail: 'a healthy run prints the same sentence, so it distinguishes nothing' };
       return { ok: true, detail: 'the empty run says what the healthy run does not' };
     },
+  },
+  {
+    id: 7,
+    name: 'a directory that could not be listed read as a folder with no projects',
+    source: 'VideoAnalyzer — FileManager.java at 6bf5971^',
+    cost: 'a locked or unreadable projects folder showed the placeholder ' +
+      '"you have no projects", so a customer whose disk hiccuped was told their work was gone',
+    state: 'LIVE',
+    material: javaBeforeFix,
+    expect: { rule: 'default-on-error', file: 'FileManager.java', value: 'new ArrayList<>()' },
+    // TWO THINGS ARE ASSERTED BEYOND THE FINDING, because both were added for
+    // this defect and both could regress without changing the count:
+    //   * it must be found at the DIRECTORY rung. At the file rung every
+    //     handler collapses, so a ladder that stops at the first big-enough
+    //     group reports nothing here and the answer is lost in silence.
+    //   * it must be named after the call it actually handles. The handler
+    //     stands over Files.newDirectoryStream; the nested Files.readAttributes
+    //     inside the stream has a try of its own and never reaches it. A
+    //     finding that sends the reader to the wrong line is not a weaker
+    //     finding, it is a wrong one.
+    also: f =>
+      f.meta.layerKind !== 'dir'
+        ? 'found at the ' + f.meta.layerKind + ' rung, not the directory'
+        : !/Files\.newDirectoryStream/.test(f.label)
+          ? 'named after the wrong call — ' + f.label
+          : null,
   },
 ];
 

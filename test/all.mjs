@@ -39,7 +39,7 @@ const LAYERS = [
   ['evidence', 'every citation is real'],
   ['resilience', 'fail loudly, never quietly'],
   ['readme', 'the README agrees with the tool'],
-  ['known-answers', 'the six hand-traced defects'],
+  ['known-answers', 'the seven hand-traced defects'],
 ];
 
 const missing = LAYERS.filter(([n]) => !fs.existsSync(path.join(HERE, n + '.mjs')));

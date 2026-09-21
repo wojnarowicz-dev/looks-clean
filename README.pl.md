@@ -1,10 +1,10 @@
 # looks-clean
 
 [![tests](https://github.com/wojnarowicz-dev/looks-clean/actions/workflows/ci.yml/badge.svg)](https://github.com/wojnarowicz-dev/looks-clean/actions/workflows/ci.yml)
-[![znane odpowiedzi: 4 z 6 wymaga prywatnego materialu](https://img.shields.io/badge/znane%20odpowiedzi-4%20z%206%20wymaga%20prywatnego%20materialu-yellow)](test/known-answers.mjs)
+[![znane odpowiedzi: 5 z 7 wymaga prywatnego materialu](https://img.shields.io/badge/znane%20odpowiedzi-5%20z%207%20wymaga%20prywatnego%20materialu-yellow)](test/known-answers.mjs)
 
-> Zielona odznaka obejmuje dziesięć warstw testowych. **Nie** obejmuje czterech
-> z sześciu znanych odpowiedzi: wymagają repozytoriów, które nie są publiczne,
+> Zielona odznaka obejmuje dziesięć warstw testowych. **Nie** obejmuje pięciu
+> z siedmiu znanych odpowiedzi: wymagają repozytoriów, które nie są publiczne,
 > więc CI zgłasza je jako nieosiągalne, a nie jako zaliczone. Druga odznaka o tym
 > mówi, a `test/readme.mjs` sprawdza, czy jej liczba to liczba, którą podaje zestaw.
 
@@ -14,7 +14,7 @@
 dlatego, że nic tam nie ma, czy dlatego, że coś padło — i nie ma jak tego
 poznać z kodu.**
 
-`looks-clean` czyta projekt w JavaScripcie albo TypeScripcie i szuka miejsc, w
+`looks-clean` czyta projekt w JavaScripcie, TypeScripcie albo Javie i szuka miejsc, w
 których awaria jest nieodróżnialna od pustego wyniku: tam, gdzie program mówi
 *nic nie znalazłem* zamiast *nie dałem rady sprawdzić*.
 
@@ -34,8 +34,8 @@ z przodu.
 <!-- lc:claim name=rules value=4 -->
 <!-- lc:claim name=rulesNeedingPopulation value=3 -->
 <!-- lc:claim name=layers value=10 -->
-<!-- lc:claim name=knownAnswers value=6 -->
-<!-- lc:claim name=knownAnswersInScope value=5 -->
+<!-- lc:claim name=knownAnswers value=7 -->
+<!-- lc:claim name=knownAnswersInScope value=6 -->
 <!-- lc:claim name=families value=8 -->
 <!-- lc:claim name=languages value=2 -->
 <!-- lc:claim name=messages value=139 -->
@@ -54,6 +54,16 @@ z przodu.
 <!-- lc:claim name=precisionRealBefore value=2 -->
 <!-- lc:claim name=precisionNoiseBefore value=28 -->
 <!-- lc:claim name=precisionTestCode value=12 -->
+<!-- lc:claim name=javaSampleReported value=89 -->
+<!-- lc:claim name=javaRandomChecked value=20 -->
+<!-- lc:claim name=javaRandomReal value=14 -->
+<!-- lc:claim name=javaRandomDeliberate value=3 -->
+<!-- lc:claim name=javaRandomNoise value=3 -->
+<!-- lc:claim name=javaFirstChecked value=20 -->
+<!-- lc:claim name=javaFirstReal value=9 -->
+<!-- lc:claim name=javaFirstDeliberate value=5 -->
+<!-- lc:claim name=javaFirstNoise value=6 -->
+<!-- lc:claim name=javaNoisyRules value=1 -->
 
 ## Czym to się różni od twojego lintera
 
@@ -93,7 +103,10 @@ regułami.
 
 ## Jak często się myli
 
-Dwa pomiary, sześć projektów, żaden nie jest mój. Stoją obok siebie, a nie jako
+Trzy pomiary. Dwa na sześciu projektach w JavaScripcie, żaden nie jest mój;
+trzeci na Javie, zrobiony zanim wyszło 0.2.0. Żaden nie jest uśredniony w inny.
+
+Pierwsze dwa, obok siebie. Stoją obok siebie, a nie jako
 jedna poprawiona liczba, bo między nimi zmieniło się narzędzie i zmienił się
 materiał — a pojedyncza skorygowana liczba ukryłaby oba te fakty.
 
@@ -198,8 +211,68 @@ warstwę.
 Wykluczenie kodu testowego to jeszcze co innego — poprawka zakresu, prawdziwa
 przed pomiarem, a nie z niego wyprowadzona.
 
-Każdy werdykt zapadł po przeczytaniu kodu w cytowanej linii. Pełny zapis,
-z powodem przy każdym z czterdziestu, leży w `test/precision.json`.
+### Java — trzeci pomiar, i pierwszy ekran jest tym gorszym
+
+Java weszła w 0.2.0. Zanim wyszła, dwadzieścia zgłoszeń wylosowano **losowo**
+z prawdziwego przebiegu na Javie i przeczytano w linii, którą każde cytuje — a
+potem dwadzieścia kolejnych, **z góry wypisanej listy**, bo to jest ekran, który
+człowiek naprawdę widzi. Te dwie liczby są różne i obie są tutaj właśnie dlatego.
+
+| | losowa dwudziestka | pierwsza dwudziestka |
+|---|---:|---:|
+| **prawdziwe usterki** | **14** | **9** |
+| **celowe i do obrony** | 3 | 5 |
+| **fałszywe alarmy** | **3** | **6** |
+| sprawdzonych | 20 | 20 |
+
+Materiał: 21-plikowy katalog `managers/` aplikacji desktopowej w Javie, 89
+zgłoszeń, ustawienia domyślne. Próbka: ziarno `looks-clean-java-0.2.0`, zapisane
+w `test/precision.json`, żeby ta sama dwudziestka wróciła beze mnie.
+
+Trzy werdykty zamiast dwóch. Miejsce może być usterką, **celowym** wyborem,
+który autor zapisał w komentarzu i nie podziękuje za zmianę, albo zgłoszeniem,
+którego narzędzie nie powinno było zrobić. Tylko to ostatnie jest fałszywym
+alarmem. Cztery obsługi połykające awarię przy zamykaniu aplikacji, każda za
+komentarzem tłumaczącym, dlaczego awaria sprzątania nie może przewrócić
+zamykania, są powodem, dla którego środkowa kolumna istnieje.
+
+**Góra listy jest gorszą połową**: 6 fałszywych alarmów na 20 wobec 3 na 20
+niżej. To odwrotność tego, o co zwykle oskarża się próbkę z góry listy, i ma
+jedną przyczynę — reguła 4 punktuje najwyżej, a w regule 4 siedzi każdy fałszywy
+alarm.
+
+| reguła | losowa | pierwsza |
+|---|---|---|
+| `same-answer` | **3 z 7 fałszywe** | **6 z 10 fałszywych** |
+| `swallowed` | 0 z 11 | 0 z 9 |
+| `default-on-error` | 0 z 2 | 0 z 1 |
+| `no-timeout` | nie zgłosiła nic | nie zgłosiła nic |
+
+Dwie przyczyny, obie w regule 4:
+
+* **Strażnik argumentu to nie jest ścieżka pustki.** `if (x == null) return null`
+  odpowiada wołającemu, który zadał źle postawione pytanie; zderzenie tego z
+  `catch`, który też odpowiada `null`, daje zgłoszenie o niczym. Pięć z sześciu
+  fałszywych alarmów w pierwszej próbce to właśnie to.
+* **Metoda `void` nie ma odpowiedzi**, więc jej dwie ścieżki nie mogą się różnić.
+  Dwa zgłoszenia mówiły, że metoda zwraca `undefined` na obu ścieżkach — co robi
+  każda metoda `void`.
+
+Obie są naprawione w 0.2.1, na świeżym materiale, a nie na tym, który je znalazł
+— naprawianie detektora pod jego własny test i ponowny pomiar to sposób, w jaki
+liczba trafności staje się bezwartościowa.
+
+**Ani jeden fałszywy alarm nie wyszedł z tablic.** Żadnej złej rodziny, żadnej
+złej wartości dwuznacznej, żadnego odczytu, który odczytem nie jest. Tablica
+odczytów dla Javy powstała z licznika na prawdziwym drzewie — `Files.*` 459 razy,
+`.send` 16, każdy z nich to `HttpClient.send` — a trzy kształty, które tablica
+pisana z pamięci by niosła, wypadły, bo nic w materiale do nich nie pasowało.
+
+Dwadzieścia sprawdzonych losowo z osiemdziesięciu dziewięciu to dwadzieścia
+sprawdzonych. Pozostałych 53 nikt nie przeczytał i nic tu nie twierdzi inaczej.
+
+Każdy werdykt we wszystkich trzech pomiarach zapadł po przeczytaniu kodu w
+cytowanej linii. Pełny zapis leży w `test/precision.json`.
 
 ## Czego NIE robi
 
@@ -210,8 +283,9 @@ z powodem przy każdym z czterdziestu, leży w `test/precision.json`.
   nagłówku przebiegu; nigdy nie jest pustym miejscem.
 * **Nie wie, czy zgłoszenie to błąd.** Ta klasa narzędzi ma opublikowaną
   trafność 18,1% (PR-Miner). Czytaj, oceniaj, wyciszaj.
-* **Nie czyta Javy, Pythona, Darta, Go ani SQL-a.** Najpierw jeden język,
-  wybrany pomiarem — patrz [Dlaczego najpierw JavaScript](#dlaczego-najpierw-javascript).
+* **Nie czyta Pythona, Darta, Go ani SQL-a.** Najpierw JavaScript i TypeScript,
+  Java w 0.2.0, każdy po pomiarze — patrz
+  [Dlaczego najpierw JavaScript](#dlaczego-najpierw-javascript).
 * **Nie zastępuje twojego lintera.** Uruchamiaj oba. Pokrywają się dokładnie na
   jednej z czterech reguł, a ta jedna jest tu celowo najsłabsza.
 
@@ -286,7 +360,7 @@ Wszystko przyjmuje `--lang pl`.
 
 | polecenie | |
 |---|---|
-| `scan <dir>` | cztery reguły na drzewie JavaScript/TypeScript |
+| `scan <dir>` | cztery reguły na drzewie JavaScript, TypeScript albo Java |
 | `rank <run.json> [...]` | jedna lista ponad zapisami — co czytać pierwsze |
 | `diff <a.json> <b.json>` | co doszło, co zniknęło, co się zmieniło |
 | `rules` | cztery reguły i to, która potrzebuje sąsiadów |
@@ -351,10 +425,11 @@ rzeczy są celowo trzymane osobno.
 ## Dlaczego najpierw JavaScript
 
 Z pomiaru, nie z gustu. Sześć znanych usterek prześledzono ręcznie przed
-napisaniem pierwszej linii; **pięć z sześciu to JavaScript albo TypeScript** i są
-osiągalne w prawdziwym materiale. Szósta to sprawdzarka migracji SQL i została
-zapisana jako poza zakresem języka, nie jako nieznaleziona — patrz
-`test/known-answers.mjs`.
+napisaniem pierwszej linii; **pięć z sześciu było JavaScriptem albo
+TypeScriptem** i były osiągalne w prawdziwym materiale. Szósta to sprawdzarka
+migracji SQL i została zapisana jako poza zakresem języka, nie jako
+nieznaleziona — patrz `test/known-answers.mjs`. Siódma odpowiedź, w Javie,
+doszła z 0.2.0.
 
 Dwa dalsze powody, wagą:
 
@@ -363,6 +438,12 @@ Dwa dalsze powody, wagą:
   rozpoznawalne: `AbortSignal.timeout`, `AbortController` odpalony z
   `setTimeout`, `Promise.race`, opcja `timeout:`. W Javie to samo pytanie
   rozkłada się na kilkanaście niepowiązanych API.
+
+  **To przewidywanie zostało zmierzone i się sprawdziło.** Na drzewie w Javie
+  wyżej reguła 3 nie zgłosiła nic: 78 odczytów zewnętrznych i wszystkie 78
+  pominiętych z tego samego, wypisanego powodu — nigdzie w tym drzewie nie ma
+  limitu czasu, od którego dałoby się odstawać. Reguła zamilkła, powiedziała o
+  tym w nagłówku i miała rację. Reguła, która by zgadywała, zgłosiłaby 78 razy.
 * Tokenizer i warstwa parsowania przeszły z `odd-one-out` bez zmian. Jedna
   gramatyka `tree-sitter-typescript` czyta `.js .mjs .cjs .ts .mts`, a gramatyka
   `tsx` pokrywa JSX. Żeby zacząć mierzyć, nie trzeba było niczego wymyślać.
@@ -378,7 +459,7 @@ Jeden runner, `test/all.mjs`. Każda warstwa łapie coś, czego nie widzi żadna
 inna, i każda ma własny kod wyjścia: `0` przeszła, `1` padła, `2` nie dosięgła
 materiału. **Warstwa pominięta nie jest warstwą, która przeszła**, więc czysty
 przebieg całości w tym repozytorium kończy się kodem 2 — sprawdzarka migracji ze
-znanej odpowiedzi 4 nie jest JavaScriptem, a zestaw odmawia nazwania tego
+znanej odpowiedzi 4 to narzędzie SQL-owe, a zestaw odmawia nazwania tego
 sukcesem.
 
 | | warstwa | co widzi tylko ona |

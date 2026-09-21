@@ -231,7 +231,7 @@ const S = {
   'helpLangPl': { en: '  --lang pl   Polish', pl: '  --lang pl   polski' },
   'helpCommands': { en: 'COMMANDS', pl: 'POLECENIA' },
   'helpOptions': { en: '         options: {0}', pl: '         opcje: {0}' },
-  'cmdScan': { en: 'Scan a JavaScript/TypeScript tree with all four rules.', pl: 'Przeskanuj drzewo JavaScript/TypeScript wszystkimi czterema regulami.' },
+  'cmdScan': { en: 'Scan a JavaScript, TypeScript or Java tree with all four rules.', pl: 'Przeskanuj drzewo JavaScript, TypeScript albo Java wszystkimi czterema regulami.' },
   'cmdDiff': { en: 'Difference between two saved runs: what appeared, what is gone, what changed.', pl: 'Roznica miedzy dwoma zapisami: co doszlo, co zniknelo, co sie zmienilo.' },
   'cmdRank': { en: 'One ranked list across saved runs — what to read first.', pl: 'Jedna lista ponad zapisami — co czytac pierwsze.' },
   'cmdRules': { en: 'What the four rules are, and which of them needs neighbours.', pl: 'Czym sa cztery reguly i ktora z nich potrzebuje sasiadow.' },

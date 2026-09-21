@@ -259,6 +259,18 @@ check('two measurements are kept, not one corrected',
 const latest = precision.measurements[precision.measurements.length - 1];
 const earlier = precision.measurements[0];
 
+// THE JAVA SAMPLE HAS TWO NUMBERS AND THE PAGE MUST CARRY BOTH. The one a
+// reader meets first is the top of the list, and on this material that is the
+// worse of the two — so a page quoting only the random figure would be making
+// exactly the promise this tool exists to catch: a number that reads clean
+// because of what it left out.
+const javaSample = (precision.languageSamples || []).find(s => s.language === 'java');
+check('a java sample is recorded', !!javaSample, javaSample ? javaSample.id : 'none');
+const noisyRules = javaSample
+  ? new Set([...javaSample.randomSample.findings, ...javaSample.firstSample.findings]
+    .filter(r => r.verdict === 'noise').map(r => r.rule)).size
+  : null;
+
 const TRUTH = {
   precisionMeasurements: precision.measurements.length,
   precisionProjects: latest.projects.length,
@@ -283,6 +295,16 @@ const TRUTH = {
   fixturePlanted: plantedCount,
   cleanFindings: scanCount(path.join(HERE, 'fixtures', 'clean')),
   defaultExclusions: DEFAULT_EXCLUDE.length,
+  javaSampleReported: javaSample && javaSample.reported,
+  javaRandomChecked: javaSample && javaSample.randomSample.checked,
+  javaRandomReal: javaSample && javaSample.randomSample.real,
+  javaRandomDeliberate: javaSample && javaSample.randomSample.deliberate,
+  javaRandomNoise: javaSample && javaSample.randomSample.noise,
+  javaFirstChecked: javaSample && javaSample.firstSample.checked,
+  javaFirstReal: javaSample && javaSample.firstSample.real,
+  javaFirstDeliberate: javaSample && javaSample.firstSample.deliberate,
+  javaFirstNoise: javaSample && javaSample.firstSample.noise,
+  javaNoisyRules: noisyRules,
 };
 
 // ---------------------------------------------------------------- 1. claims
@@ -554,7 +576,12 @@ for (const [file, lang] of PAGES) {
   // repositories — which is the state every CI run is in.
   const r = spawnSync(process.execPath, [path.join(HERE, 'known-answers.mjs')], {
     cwd: ROOT, encoding: 'utf8', maxBuffer: 1e9,
-    env: { ...process.env, LC_ODD: path.join(ROOT, 'no-such-checkout'), LC_WEB: path.join(ROOT, 'no-such-checkout') },
+    env: {
+      ...process.env,
+      LC_ODD: path.join(ROOT, 'no-such-checkout'),
+      LC_WEB: path.join(ROOT, 'no-such-checkout'),
+      LC_JAVA: path.join(ROOT, 'no-such-checkout'),
+    },
   });
   const out = (r.stdout || '') + (r.stderr || '');
   const m = out.match(/(\d+) found \([^)]*\), (\d+) lost, (\d+) unreachable\s+\((\d+) answers\)/);

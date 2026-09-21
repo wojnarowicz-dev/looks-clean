@@ -1,10 +1,10 @@
 # looks-clean
 
 [![tests](https://github.com/wojnarowicz-dev/looks-clean/actions/workflows/ci.yml/badge.svg)](https://github.com/wojnarowicz-dev/looks-clean/actions/workflows/ci.yml)
-[![known answers: 4 of 6 need private material](https://img.shields.io/badge/known%20answers-4%20of%206%20need%20private%20material-yellow)](test/known-answers.mjs)
+[![known answers: 5 of 7 need private material](https://img.shields.io/badge/known%20answers-5%20of%207%20need%20private%20material-yellow)](test/known-answers.mjs)
 
-> The green badge covers the ten test layers. It does **not** cover four of the
-> six known answers: they need repositories that are not public, so CI reports
+> The green badge covers the ten test layers. It does **not** cover five of the
+> seven known answers: they need repositories that are not public, so CI reports
 > them as unreachable rather than as passing. The second badge says so, and
 > `test/readme.mjs` checks that its number is the number the suite reports.
 
@@ -14,7 +14,7 @@
 empty because there is nothing there or because something broke — and who has no
 way to tell from the code.**
 
-`looks-clean` reads a JavaScript or TypeScript project and finds the places
+`looks-clean` reads a JavaScript, TypeScript or Java project and finds the places
 where a failure is indistinguishable from an empty result: where the program
 says *I found nothing* instead of *I could not check*.
 
@@ -33,8 +33,8 @@ on this page works the same way with `npx looks-clean` in front of it.
 <!-- lc:claim name=rules value=4 -->
 <!-- lc:claim name=rulesNeedingPopulation value=3 -->
 <!-- lc:claim name=layers value=10 -->
-<!-- lc:claim name=knownAnswers value=6 -->
-<!-- lc:claim name=knownAnswersInScope value=5 -->
+<!-- lc:claim name=knownAnswers value=7 -->
+<!-- lc:claim name=knownAnswersInScope value=6 -->
 <!-- lc:claim name=families value=8 -->
 <!-- lc:claim name=languages value=2 -->
 <!-- lc:claim name=messages value=139 -->
@@ -53,6 +53,16 @@ on this page works the same way with `npx looks-clean` in front of it.
 <!-- lc:claim name=precisionRealBefore value=2 -->
 <!-- lc:claim name=precisionNoiseBefore value=28 -->
 <!-- lc:claim name=precisionTestCode value=12 -->
+<!-- lc:claim name=javaSampleReported value=89 -->
+<!-- lc:claim name=javaRandomChecked value=20 -->
+<!-- lc:claim name=javaRandomReal value=14 -->
+<!-- lc:claim name=javaRandomDeliberate value=3 -->
+<!-- lc:claim name=javaRandomNoise value=3 -->
+<!-- lc:claim name=javaFirstChecked value=20 -->
+<!-- lc:claim name=javaFirstReal value=9 -->
+<!-- lc:claim name=javaFirstDeliberate value=5 -->
+<!-- lc:claim name=javaFirstNoise value=6 -->
+<!-- lc:claim name=javaNoisyRules value=1 -->
 
 ## How this differs from your linter
 
@@ -91,7 +101,10 @@ every bare `catch { return [] }` would be a linter with worse rules.
 
 ## How often it is wrong
 
-Two measurements, six projects, none of them mine. They are printed side by side
+Three measurements. Two on six JavaScript projects, none of them mine; a third
+on Java, taken before 0.2.0 shipped. None of them is averaged into another.
+
+The first two, side by side. They are printed side by side
 rather than as one corrected figure, because the tool changed between them and so
 did the material — and a single revised number would hide both facts.
 
@@ -195,8 +208,69 @@ not read: 741 file(s) behind 12 excluded director(ies) (counted up to a cap, so 
 Excluding test code was a third kind of thing again — a scope correction, true
 before the measurement and not derived from it.
 
-Every verdict was reached by reading the code at the cited line. The full record,
-with a reason for each of the forty, is in `test/precision.json`.
+### Java — the third measurement, and the first screen is the worse one
+
+Java arrived in 0.2.0. Before it shipped, twenty findings were drawn **at
+random** from a real Java run and read at the line each one cites — and then
+twenty more, the **top of the printed list**, because that is the screen a
+person actually sees. The two numbers are different, and both are here for that
+reason.
+
+| | random twenty | first twenty |
+|---|---:|---:|
+| **real defects** | **14** | **9** |
+| **deliberate, and defensible** | 3 | 5 |
+| **false alarms** | **3** | **6** |
+| checked | 20 | 20 |
+
+Material: the 21-file `managers/` directory of a Java desktop application, 89
+findings reported, default settings. Sample: seed `looks-clean-java-0.2.0`,
+recorded in `test/precision.json`, so the same twenty come back without me.
+
+Three verdicts rather than two. A site can be a defect, a **deliberate** choice
+the author made behind a comment and would not thank you for changing, or a
+finding the tool should not have made. Only the last is a false alarm. Four
+handlers that swallow a failure during application shutdown, each behind a
+comment explaining why a failure there must not stop the shutdown, are the
+reason the middle column exists.
+
+**The top of the list is the worse half**: 6 false alarms in 20 against 3 in 20
+further down. That is the opposite of what a top-of-the-list sample is usually
+accused of, and it has one cause — rule 4 scores highest, and rule 4 holds every
+false alarm.
+
+| rule | random twenty | first twenty |
+|---|---|---|
+| `same-answer` | **3 of 7 false** | **6 of 10 false** |
+| `swallowed` | 0 of 11 | 0 of 9 |
+| `default-on-error` | 0 of 2 | 0 of 1 |
+| `no-timeout` | reported nothing | reported nothing |
+
+Two causes, both in rule 4:
+
+* **A parameter guard is not the empty path.** `if (x == null) return null`
+  answers a caller who asked a malformed question; colliding it with a `catch`
+  that also answers `null` produces a finding about nothing. Five of the six
+  false alarms in the first sample are this one.
+* **A void method has no answer**, so its two paths cannot differ. Two findings
+  reported a method for returning `undefined` on both paths, which every `void`
+  method does.
+
+Both are fixed in 0.2.1, on fresh material rather than on the material that
+found them — repairing a detector against its own test and re-running is how a
+precision number becomes worthless.
+
+**Not one false alarm came from the tables.** No wrong family, no wrong
+ambiguous value, no read that was not a read. The read table for Java was
+written from a count of a real tree — `Files.*` 459 times, `.send` 16, every one
+of them `HttpClient.send` — and three shapes a table written from memory would
+have carried were left out because nothing in the material matched them.
+
+Twenty checked at random out of eighty-nine is twenty checked. The other 53 are
+unread, and nothing here claims otherwise.
+
+Every verdict in all three measurements was reached by reading the code at the
+cited line. The full record is in `test/precision.json`.
 
 ## What it does not do
 
@@ -207,8 +281,9 @@ with a reason for each of the forty, is in `test/precision.json`.
   and named in the run header; it is never a blank.
 * **It does not know whether a finding is a bug.** This class of tool has a
   published precision of 18.1% (PR-Miner). Read, judge, mute.
-* **It does not read Java, Python, Dart, Go or SQL.** One language first, chosen
-  by measurement — see [Why JavaScript first](#why-javascript-first).
+* **It does not read Python, Dart, Go or SQL.** JavaScript and TypeScript first,
+  Java in 0.2.0, each after measuring — see
+  [Why JavaScript first](#why-javascript-first).
 * **It does not replace your linter.** Run both. They overlap on exactly one of
   the four rules, and that one is deliberately the weakest here.
 
@@ -285,7 +360,7 @@ only what is NEW since last time is shown. After `npm i -g` the command is
 
 | command | |
 |---|---|
-| `scan <dir>` | run the four rules over a JavaScript/TypeScript tree |
+| `scan <dir>` | run the four rules over a JavaScript, TypeScript or Java tree |
 | `rank <run.json> [...]` | one ranked list across saved runs — what to read first |
 | `diff <a.json> <b.json>` | what appeared, what is gone, what changed |
 | `rules` | the four rules, and which of them needs neighbours |
@@ -348,9 +423,10 @@ the finding; mutes change only what is SHOWN. The two are kept apart on purpose.
 ## Why JavaScript first
 
 Measured, not chosen. Six known defects were traced by hand before any code was
-written; **five of the six are JavaScript or TypeScript** and are reachable in
-real material. The sixth is a SQL-migration checker and is recorded as out of
-language scope rather than as missing — see `test/known-answers.mjs`.
+written; **five of the six were JavaScript or TypeScript** and reachable in real
+material. The sixth is a SQL-migration checker and is recorded as out of
+language scope rather than as missing — see `test/known-answers.mjs`. A seventh
+answer, in Java, was added with 0.2.0.
 
 Two further reasons, in order of weight:
 
@@ -359,6 +435,12 @@ Two further reasons, in order of weight:
   `AbortSignal.timeout`, an `AbortController` fired from a `setTimeout`,
   `Promise.race`, a `timeout:` option. In Java the same question is spread
   across a dozen unrelated APIs.
+
+  **That prediction has since been measured, and it held.** On the Java tree
+  above, rule 3 reported nothing at all: 78 external reads, and all 78 passed
+  over for the same stated reason — not one layer anywhere in the tree has a
+  deadline to deviate from. The rule went quiet, said so in the header, and was
+  right to. A rule that had guessed instead would have reported 78 findings.
 * The tokenizer and the parse layer came across from `odd-one-out` unchanged.
   One `tree-sitter-typescript` grammar reads `.js .mjs .cjs .ts .mts`, and the
   `tsx` grammar covers JSX. Nothing had to be invented before measuring could
@@ -375,7 +457,7 @@ One runner, `test/all.mjs`. Each layer catches something no other layer can see,
 and each keeps its own exit code: `0` passed, `1` failed, `2` could not reach its
 material. **A skipped layer is not a passing layer**, so a clean run of the whole
 suite on this repository exits 2 — the migration checker in known answer 4 is
-not JavaScript, and the suite refuses to call that a pass.
+SQL tooling, and the suite refuses to call that a pass.
 
 | | layer | what only it can see |
 |---|---|---|
