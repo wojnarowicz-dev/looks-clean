@@ -20,6 +20,16 @@ says *I found nothing* instead of *I could not check*.
 
 It does not have opinions. It has neighbours.
 
+## Run it without installing
+
+```
+npx looks-clean scan .
+```
+
+Node 18 or newer. Nothing to clone, nothing to configure, no config file:
+the tool reads the project you point it at and nothing else. Every command
+on this page works the same way with `npx looks-clean` in front of it.
+
 <!-- lc:claim name=rules value=4 -->
 <!-- lc:claim name=rulesNeedingPopulation value=3 -->
 <!-- lc:claim name=layers value=10 -->
@@ -243,7 +253,8 @@ FIX
      Not a defect? Write `// looks-clean: ok — reason` on that line, or above it.
 ```
 
-Reproduce it:
+Reproduce it from a clone — `test/fixtures/` ships with the repository, not
+with the package:
 
     $ looks-clean scan test/fixtures/project --rule default-on-error --top 1
 

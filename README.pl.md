@@ -20,6 +20,17 @@ których awaria jest nieodróżnialna od pustego wyniku: tam, gdzie program mów
 
 Nie ma poglądów. Ma sąsiadów.
 
+## Uruchomienie bez instalowania
+
+```
+npx looks-clean scan .
+```
+
+Node 18 albo nowszy. Nie trzeba klonować, nie trzeba niczego ustawiać, nie ma
+pliku konfiguracyjnego: narzędzie czyta ten projekt, który mu wskażesz, i nic
+poza nim. Każde polecenie z tej strony działa tak samo z `npx looks-clean`
+z przodu.
+
 <!-- lc:claim name=rules value=4 -->
 <!-- lc:claim name=rulesNeedingPopulation value=3 -->
 <!-- lc:claim name=layers value=10 -->
@@ -243,7 +254,8 @@ POPRAWKA
      To nie usterka? Napisz `// looks-clean: ok — powod` w tej linii albo nad nia.
 ```
 
-Odtwórz to u siebie:
+Odtwórz to u siebie z klonu — `test/fixtures/` jedzie z repozytorium, nie
+z paczką:
 
     $ looks-clean scan test/fixtures/project --rule default-on-error --top 1
 
