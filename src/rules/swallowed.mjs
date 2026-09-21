@@ -53,6 +53,10 @@ export function run(ir, ctx) {
     keyOf: h => h.lang + ' ' + (h.family || 'none'),
     minpop: ctx.minpop,
     mode: ctx.layerMode,
+    // A layer where nobody records anything cannot show this handler deviating
+    // from its neighbours, so the ladder looks one rung further out before
+    // settling for a plain observation.
+    hasConvention: members => members.some(leavesTrace),
   });
 
   const findings = [];

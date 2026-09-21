@@ -134,6 +134,7 @@ export function run(ir, ctx) {
     keyOf: f => { const fam = dominantFamily(f.id); return fam === null ? null : f.lang + ' ' + fam; },
     minpop: ctx.minpop,
     mode: ctx.layerMode,
+    hasConvention: members => members.some(m => !m._collision),
   });
 
   const findings = [];

@@ -39,6 +39,7 @@ export function run(ir, ctx) {
     keyOf: r => r.lang + ' ' + r.family,
     minpop: ctx.minpop,
     mode: ctx.layerMode,
+    hasConvention: members => members.some(m => m.guard),
   });
 
   const findings = [];

@@ -146,6 +146,33 @@ for (const m of precision.measurements) {
       : m.projects.filter(p => p.counts.findings === 0).length + ' zero(s)');
 }
 
+// A BEFORE/AFTER THAT CLAIMS NOTHING CHANGED HAS TO ADD UP TOO, and it is the
+// easiest record here to write carelessly: "no change" is what everybody hopes
+// for, so nobody checks it. The per-project rows must sum to the declared
+// totals, and a run declared identical must actually have the same count on
+// both sides — otherwise a change that moved findings could sit in this file
+// describing itself as harmless.
+for (const c of precision.changeChecks || []) {
+  const tag = c.id.slice(-28);
+  const before = c.projects.reduce((a, p) => a + p.findingsBefore, 0);
+  const after = c.projects.reduce((a, p) => a + p.findingsAfter, 0);
+  check(tag + ': the per-project rows add up',
+    before === c.findingsBefore && after === c.findingsAfter,
+    before + ' before, ' + after + ' after');
+  const disagree = c.projects.filter(p => p.identical && p.findingsBefore !== p.findingsAfter);
+  check(tag + ': nothing calls itself identical and differs', disagree.length === 0,
+    disagree.length ? disagree[0].name : c.projects.length + ' projects');
+  check(tag + ': the verdict matches the rows',
+    c.identical === c.projects.every(p => p.identical),
+    c.identical ? 'identical' : 'changed');
+  // A climb that never happened anywhere is the reason nothing moved. If one
+  // ever does happen, this record stops being an explanation and has to be
+  // re-measured rather than re-read.
+  const climbed = c.projects.reduce((a, p) => a + p.ofThoseTheDirectoryHadOne, 0);
+  check(tag + ': the explanation matches the count',
+    !c.identical || climbed === 0, climbed + ' climb(s) available');
+}
+
 // THE TWO RUNS MUST STAY TWO RUNS. Collapsing them into one figure is the
 // tempting edit — it reads better and it is a lie about how the number was
 // arrived at.

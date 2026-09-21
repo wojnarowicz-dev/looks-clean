@@ -27,6 +27,29 @@
 // of two, no comparison possible, and no finding — reported as nothing to see.
 // So a group too small to speak is retried one rung out.
 //
+// A GROUP WITH NO CONVENTION IS RETRIED THE SAME WAY, and for the same reason.
+// There are two ways for a layer to have nothing to say, and only one of them
+// used to climb:
+//
+//   too few peers   — the group is smaller than minpop, so no comparison exists
+//   no convention   — the group is big enough and every member does it this way
+//
+// Both are the same sentence about the same site: THIS LAYER CANNOT ANSWER THE
+// QUESTION. Stopping at the first rung that merely reaches minpop answered a
+// different question — "do this file's four handlers disagree" — and went
+// silent when they agreed, while the directory around them disagreed loudly.
+//
+// Measured on FileManager.java of a Java tree: four handlers over the file
+// system, all four collapsing a failed read to an empty list. Four is enough to
+// speak, so the ladder stopped there, found no convention, and said nothing —
+// while one directory out, 3 of 23 handlers on the same family carry their
+// outcome. The deviation was real, the evidence was one rung away, and the
+// tool had already stopped looking.
+//
+// WHAT A CONVENTION IS belongs to the rule, not here: a deadline for rule 3, a
+// trace for rule 1, a distinguishable answer for rules 2 and 4. Each rule hands
+// in the predicate, so this module still knows nothing about what it groups.
+//
 // The whole tree is a real layer for some projects and a meaningless one for
 // others, so it is never reached by accident. On a tree of Deno edge functions
 // — one file per directory — the first version of this found nothing at all:
@@ -57,8 +80,11 @@ const ROOT_KEY = String.fromCharCode(0) + 'root';
  *                has no comparable kind and is never grouped
  * @param minpop  the smallest group allowed to speak
  * @param mode    'file' | 'dir' | 'root' — the first rung of the ladder
+ * @param hasConvention  given a rung's members, does anybody here do it the
+ *                other way? A rung that answers no is climbed past, exactly as
+ *                a rung too small to speak is. Omitted, only size is asked.
  */
-export function groupPeers(sites, { keyOf, minpop = 3, mode = 'file' } = {}) {
+export function groupPeers(sites, { keyOf, minpop = 3, mode = 'file', hasConvention = null } = {}) {
   const byFile = new Map();
   const byDir = new Map();
   const byRoot = new Map();
@@ -82,10 +108,15 @@ export function groupPeers(sites, { keyOf, minpop = 3, mode = 'file' } = {}) {
   const LAST = mode === 'file' ? 1 : 2;      // 'file' never climbs to the root rung
 
   /**
-   * The narrowest group at or above the starting rung that reaches minpop, or
-   * the widest one available with `tooFew` set. Never returns null for a site
-   * that has a discriminator: a site the tool declined to judge must be able to
-   * say so, because "passed over" and "checked and fine" must not look alike.
+   * The narrowest group at or above the starting rung that both reaches minpop
+   * AND has something to compare against. Never returns null for a site that has
+   * a discriminator: a site the tool declined to judge must be able to say so,
+   * because "passed over" and "checked and fine" must not look alike.
+   *
+   * When no rung qualifies, the group handed back is the narrowest one that was
+   * at least big enough — so the skip the rule reports names the tightest group
+   * actually examined — with `noConvention` set. If not even that exists, the
+   * widest available group comes back with `tooFew` set.
    */
   function peersOf(site) {
     const disc = site._disc;
@@ -97,10 +128,18 @@ export function groupPeers(sites, { keyOf, minpop = 3, mode = 'file' } = {}) {
       { members: byRoot.get(ROOT_KEY + ' ' + disc) || [], kind: 'root', name: 'the scanned tree' },
     ].slice(FIRST, LAST + 1);
 
-    for (const r of rungs) if (r.members.length >= minpop) return { ...r, disc, tooFew: false };
+    let bigEnough = null;
+    for (const r of rungs) {
+      if (r.members.length < minpop) continue;
+      if (!bigEnough) bigEnough = r;
+      if (!hasConvention || hasConvention(r.members))
+        return { ...r, disc, tooFew: false, noConvention: false };
+    }
+
+    if (bigEnough) return { ...bigEnough, disc, tooFew: false, noConvention: true };
 
     const widest = rungs.reduce((a, b) => (b.members.length > a.members.length ? b : a), rungs[0]);
-    return { ...widest, disc, tooFew: true };
+    return { ...widest, disc, tooFew: true, noConvention: false };
   }
 
   return { peersOf, byFile, byDir, byRoot };

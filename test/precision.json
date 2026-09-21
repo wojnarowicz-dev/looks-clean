@@ -621,5 +621,87 @@
         }
       ]
     }
+  ],
+  "_changeChecks": "A change to the tool that could move a number is measured on the SAME material before and after, and the result is kept whichever way it came out. A measurement is only worth the runs nobody was allowed to discard.",
+  "changeChecks": [
+    {
+      "id": "2026-09-21-ladder-climbs-on-no-convention",
+      "date": "2026-09-21",
+      "change": "The peer ladder now climbs a rung when the group it found has no convention, not only when the group is too small to speak.",
+      "why": "Two silences were treated as one kind. A group below minpop was retried one rung out; a group big enough whose members all did the same thing was not, and the site was passed over. Both are the same sentence — this layer cannot answer the question.",
+      "method": "Both recorded measurements' material, all six projects at the revisions they name. Default settings, no config file. The tool was run at the commit before this change and at the commit after it, and the two runs were compared finding by finding.",
+      "comparedOn": [
+        "id",
+        "file",
+        "line",
+        "rule",
+        "layerKind",
+        "peers",
+        "safe"
+      ],
+      "findingsBefore": 77,
+      "findingsAfter": 77,
+      "identical": true,
+      "verdict": "Not one JavaScript finding changed, so precision on this material cannot have changed. Nothing was re-judged because there was nothing new to judge.",
+      "whyNothingChanged": "The change only bites where a file agrees with itself and its directory does not. Across all six projects that happened 0 times. Where a JavaScript project sets no deadlines it sets none anywhere, so the silence is a property of the project rather than of the file, and the rung above is as silent as the rung below. The Java case that motivated the change is the opposite shape: FileManager.java collapses every one of its four file-system handlers, while 3 of the 23 in its directory carry their outcome.",
+      "coverage": "The finding-by-finding comparison covers all four rules. The climb-opportunity count below covers three of them: swallowed, default-on-error and no-timeout. same-answer is left out of that breakdown because its groups are built from state the rule computes internally, and the comparison above already covers it.",
+      "projects": [
+        {
+          "name": "got",
+          "revision": "687eb7dcc100ea3e548ebba227173b886789e670",
+          "findingsBefore": 9,
+          "findingsAfter": 9,
+          "identical": true,
+          "fileRungHadNoConvention": 18,
+          "ofThoseTheDirectoryHadOne": 0
+        },
+        {
+          "name": "uptime-kuma",
+          "revision": "d4fb7f38d77c09e266a859178940c0b9d88d0594",
+          "findingsBefore": 28,
+          "findingsAfter": 28,
+          "identical": true,
+          "fileRungHadNoConvention": 375,
+          "ofThoseTheDirectoryHadOne": 0
+        },
+        {
+          "name": "eslint",
+          "revision": "c8326608e710e670beaf982501aed80ea104919a",
+          "findingsBefore": 13,
+          "findingsAfter": 13,
+          "identical": true,
+          "fileRungHadNoConvention": 61,
+          "ofThoseTheDirectoryHadOne": 0
+        },
+        {
+          "name": "node-red",
+          "revision": "d5d883d",
+          "findingsBefore": 0,
+          "findingsAfter": 0,
+          "identical": true,
+          "fileRungHadNoConvention": 9,
+          "ofThoseTheDirectoryHadOne": 0
+        },
+        {
+          "name": "verdaccio",
+          "revision": "b27212f",
+          "findingsBefore": 27,
+          "findingsAfter": 27,
+          "identical": true,
+          "fileRungHadNoConvention": 99,
+          "ofThoseTheDirectoryHadOne": 0
+        },
+        {
+          "name": "fastify",
+          "revision": "ac28821",
+          "findingsBefore": 0,
+          "findingsAfter": 0,
+          "identical": true,
+          "fileRungHadNoConvention": 0,
+          "ofThoseTheDirectoryHadOne": 0
+        }
+      ],
+      "notMeasured": "This says nothing about precision in Java, where the change does move findings. That is measured separately before 0.2.0 ships."
+    }
   ]
 }
