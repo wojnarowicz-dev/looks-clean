@@ -274,6 +274,41 @@ scenario('--json points at a directory', 'the snapshot cannot be written',
     return ['scan', d, '--json', path.join(d, 'run.json')];
   });
 
+// THE `diff` COMMAND, WHICH NO SCENARIO ABOVE RUNS. Every damaged-snapshot
+// case here reaches the reader through `scan --json`, where a bad previous run
+// is handled and said out loud. `looks-clean diff a.json b.json` is a second
+// door into the same files and had no such handling: the header formats
+// `createdAt` with `new Date(...).toISOString()`, which throws on anything
+// that is not a date.
+//
+// Found while checking that a snapshot written before 0.5.0 still diffs against
+// one written after — the answer was yes, and this fell out beside it.
+//
+// The damage is one field, and a cosmetic one: the findings are intact and the
+// comparison is exactly as meaningful as it would have been. So the tool must
+// still DO the diff, and say that it could not read the timestamp. Refusing the
+// whole comparison over a decorative field would be the opposite mistake.
+scenario('snapshot with an unreadable timestamp', 'createdAt is not a date',
+  () => {
+    const d = copyFixture('project', dir('bad-date'));
+    const good = path.join(d, 'good.json');
+    run(['scan', d, '--json', good]);
+    const bad = path.join(d, 'bad.json');
+    const snap = JSON.parse(fs.readFileSync(good, 'utf8'));
+    snap.createdAt = 'yesterday afternoon';
+    fs.writeFileSync(bad, JSON.stringify(snap, null, 2) + '\n');
+    return ['diff', bad, good];
+  },
+  ['timestamp could not be read', ['NEW=', 'unchanged=']],
+  () => {
+    const d = copyFixture('project', dir('good-date'));
+    const a = path.join(d, 'a.json');
+    const b = path.join(d, 'b.json');
+    run(['scan', d, '--json', a]);
+    fs.copyFileSync(a, b);
+    return ['diff', a, b];
+  });
+
 scenario('root does not exist', 'the scanned path is not there',
   () => ['scan', path.join(TMP, 'not-here')],
   ['not-here']);

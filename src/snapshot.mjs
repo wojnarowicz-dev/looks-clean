@@ -183,11 +183,33 @@ export function diffSnapshots(oldSnap, newSnap) {
 
 export function printDiff(oldSnap, newSnap, { showUnchanged = false } = {}) {
   const d = diffSnapshots(oldSnap, newSnap);
-  const when = s => (s ? new Date(s.createdAt).toISOString().replace('T', ' ').slice(0, 19) : '—');
+
+  // A DATE THAT IS NOT A DATE USED TO END THE COMMAND. `new Date(x).toISOString()`
+  // throws RangeError on anything it cannot parse, and nothing caught it: a
+  // snapshot with a damaged `createdAt` — truncated, hand-edited, written by
+  // something else — produced a stack trace instead of a comparison, and the
+  // reader lost the diff over a decorative field.
+  //
+  // THE COMPARISON IS NOT AFFECTED BY THIS FIELD. The findings are intact and
+  // mean exactly what they meant, so the right answer is to do the diff and
+  // say the timestamp is unknown. Refusing the whole comparison would be the
+  // opposite mistake, and printing a silent dash would be this tool's own
+  // subject: an unreadable value looking like an absent one.
+  const unreadable = [];
+  const when = (s, which) => {
+    if (!s) return '—';
+    const d2 = new Date(s.createdAt);
+    if (Number.isNaN(d2.getTime())) { unreadable.push(which); return '—'; }
+    return d2.toISOString().replace('T', ' ').slice(0, 19);
+  };
+
+  const before = when(oldSnap, t('diffWhichPrevious'));
+  const now = when(newSnap, t('diffWhichCurrent'));
 
   console.log(t('diffTitle'));
   console.log(t('diffDetector', newSnap.detector, newSnap.root));
-  console.log(t('diffWhen', when(oldSnap), when(newSnap)));
+  console.log(t('diffWhen', before, now));
+  for (const which of unreadable) console.log(t('diffWhenUnreadable', which));
   if (oldSnap && oldSnap.detector !== newSnap.detector)
     console.log(t('diffWarnDetectors', oldSnap.detector, newSnap.detector));
   if (oldSnap && JSON.stringify(oldSnap.args) !== JSON.stringify(newSnap.args))

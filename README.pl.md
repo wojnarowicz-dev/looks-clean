@@ -38,7 +38,7 @@ z przodu.
 <!-- lc:claim name=knownAnswersInScope value=6 -->
 <!-- lc:claim name=families value=9 -->
 <!-- lc:claim name=languages value=2 -->
-<!-- lc:claim name=messages value=140 -->
+<!-- lc:claim name=messages value=143 -->
 <!-- lc:claim name=fixtureFindings value=7 -->
 <!-- lc:claim name=fixturePlanted value=4 -->
 <!-- lc:claim name=cleanFindings value=0 -->

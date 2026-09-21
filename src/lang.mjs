@@ -198,6 +198,11 @@ const S = {
   'diffTitle': { en: 'looks-clean — difference between two runs', pl: 'looks-clean — roznica miedzy dwoma przebiegami' },
   'diffDetector': { en: 'detector={0}  root={1}', pl: 'detektor={0}  katalog={1}' },
   'diffWhen': { en: 'previous: {0}    current: {1}', pl: 'poprzedni: {0}    biezacy: {1}' },
+  'diffWhichPrevious': { en: 'previous', pl: 'poprzedni' },
+  'diffWhichCurrent': { en: 'current', pl: 'biezacy' },
+  'diffWhenUnreadable': {
+    en: '{0} run: the timestamp could not be read — the comparison below is unaffected',
+    pl: 'przebieg {0}: nie dalo sie odczytac znacznika czasu — porownanie nizej jest nietkniete' },
   'diffWarnDetectors': { en: '!! different detectors: {0} vs {1} — the comparison means little', pl: '!! rozne detektory: {0} vs {1} — porownanie niewiele znaczy' },
   'diffWarnThresholds': { en: '!! different settings: [{0}] vs [{1}] — some of the change comes from the flags, not the code', pl: '!! rozne ustawienia: [{0}] vs [{1}] — czesc zmiany bierze sie z flag, nie z kodu' },
   'diffCounts': { en: 'NEW={0}  GONE={1}  CHANGED={2}  unchanged={3}', pl: 'NOWE={0}  ZNIKNELO={1}  ZMIENIONE={2}  bez zmian={3}' },
