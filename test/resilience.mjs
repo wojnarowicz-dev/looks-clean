@@ -321,8 +321,105 @@ scenario('unknown layer name', 'a flag value the tool does not know',
   () => ['scan', copyFixture('project', dir('bad-layer')), '--layer', 'galaxy'],
   ['Unknown layer']);
 
-// ---------------------------------------------------------------- run
+// ---------------------------------------------------------------- verdict
+//
+// WHAT STATE A RUN IS IN, as one function, so that it can be asked questions
+// directly. It used to be inline in the loop below, where the only way to test
+// it was to damage the tool and read the table.
+// A STACK TRACE IS A CRASH WHATEVER THE EXIT CODE SAYS.
+//
+// The state machine below read CRASH off the exit code alone — anything
+// outside {0, 1, 2}. An uncaught exception in Node exits 1, which that rule
+// calls an ordinary failure, so a run that died on a RangeError was scored
+// SPOKE and the summary line printed `0 CRASH` with a straight face.
+//
+// Measured, not supposed. With the guard in printDiff temporarily removed and
+// a scenario expecting the phrase the crash itself prints:
+//
+//   SPOKE  ... exit 1   "Invalid time value"
+//   4 loud, 11 spoke, 0 CRASH, 0 SILENT
+//
+// The `speaks` groups saved the real case that found this, because the phrases
+// a fixed tool would print were absent. They would not have saved a scenario
+// whose expected phrase appears anyway — which is precisely the scenario above.
+//
+// TWO SHAPES, AND BOTH ARE THE RUNTIME'S, NOT THE TOOL'S. A V8 stack frame
+// (four spaces, "at", then file:line:col) and an error class at the start of
+// a line ("RangeError: ..."). The tool's own diagnostics name errno codes —
+// EISDIR, EACCES, EPERM — and never print either shape, so a healthy run
+// cannot match by accident.
+const STACK_FRAME = /^\s+at .+:\d+:\d+\)?\s*$/m;
+const ERROR_CLASS = /^[A-Za-z]*Error: /m;
+export const looksLikeACrash = out => STACK_FRAME.test(out) || ERROR_CLASS.test(out);
+
+export function verdict({ damagedOut, healthyOut, status, speaks }) {
+  const hit = g => g.filter(k => damagedOut.includes(k));
+  const said = speaks.filter(g => g.some(k => damagedOut.includes(k) && !healthyOut.includes(k)));
+  const useless = speaks.filter(g => hit(g).length && hit(g).every(k => healthyOut.includes(k)));
+  const missing = speaks.filter(g => !hit(g).length);
+
+  const state = looksLikeACrash(damagedOut) ? 'CRASH'
+    : (status !== 0 && status !== 1 && status !== 2) ? 'CRASH'
+      : missing.length ? 'STALE'
+        : status === 2 ? 'LOUD'
+          : said.length ? 'SPOKE' : 'SILENT';
+
+  return { state, hit, said, useless, missing };
+}
+
+// ---------------------------------------------------------- the verdict itself
+//
+// THE SCENARIOS TEST THE TOOL. THESE TEST THE SCORING. A state machine that
+// mislabels a crash cannot be caught by the scenarios it scores — that is how
+// `0 CRASH` was printed over a run that died on an uncaught exception — so it
+// is asked directly, with outputs written here rather than produced by a run.
+//
+// The first row is the one that was wrong, and it is the whole reason this
+// block exists: exit 1, a stack trace, AND the phrase the scenario was hoping
+// for. Every other check in this layer says that run passed.
+const VERDICTS = [
+  ['a stack trace with the expected phrase', 'CRASH',
+    'previous: —\nRangeError: Invalid time value\n    at Date.toISOString (<anonymous>)\n    at when (src/snapshot.mjs:186:48)\n',
+    1, [['Invalid time value']]],
+  ['a stack frame alone', 'CRASH',
+    'something\n    at when (file:///c:/x/src/snapshot.mjs:186:48)\n', 1, [['something']]],
+  ['an error class alone', 'CRASH', 'TypeError: x is not a function\n', 1, [['TypeError']]],
+  ['an exit code no one expects', 'CRASH', 'nothing useful\n', 7, [['nothing useful']]],
+  ['said something a healthy run does not', 'SPOKE', 'could not be read\n', 1, [['could not be read']]],
+  ['refused loudly', 'LOUD', 'nothing to read\n', 2, [['nothing to read']]],
+  ['a phrase that can no longer print', 'STALE', 'some other words\n', 1, [['never printed']]],
+  ['damaged and silent about it', 'SILENT', 'findings: 0\n', 0, [['findings: 0']]],
+];
+
+// AND THE HEALTHY SIDE MUST NOT MATCH. An errno code is what this tool's own
+// diagnostics print; if either pattern caught one, every loud refusal in the
+// table above would be reported as a crash and the layer would be unusable.
+const NOT_CRASHES = [
+  'EISDIR: that is a directory, not a file\n',
+  'EACCES while reading .looks-clean.json — treated as no configuration\n',
+  'Unknown rule: no-such-rule\n',
+  'read: 7 files, 40 functions\nfindings: 0\n',
+];
+
 console.log('looks-clean — failure resilience\n');
+console.log('  how a run is scored\n');
+let verdictFailed = 0;
+for (const [name, want, out, status, speaks] of VERDICTS) {
+  const got = verdict({ damagedOut: out, healthyOut: 'findings: 0\n', status, speaks }).state;
+  const ok = got === want;
+  if (!ok) verdictFailed++;
+  console.log('  ' + (ok ? 'ok    ' : 'FAIL  ') + name.padEnd(46) + want + (ok ? '' : ', got ' + got));
+}
+for (const out of NOT_CRASHES) {
+  const ok = !looksLikeACrash(out);
+  if (!ok) verdictFailed++;
+  console.log('  ' + (ok ? 'ok    ' : 'FAIL  ') +
+    ('not a crash: ' + out.split('\n')[0].slice(0, 40)).padEnd(46) + (ok ? '' : 'read as a crash'));
+}
+console.log('');
+
+// ---------------------------------------------------------------- run
+
 const rows = [];
 for (const s of SCENARIOS) {
   let args;
@@ -334,16 +431,10 @@ for (const s of SCENARIOS) {
 
   // The phrase has to DISTINGUISH. Present in both means it says nothing about
   // the damage, however alarming it reads.
-  const hit = g => g.filter(k => damaged.out.includes(k));
-  const said = s.speaks.filter(g => g.some(k => damaged.out.includes(k) && !healthy.out.includes(k)));
-  const useless = s.speaks.filter(g => hit(g).length && hit(g).every(k => healthy.out.includes(k)));
-  const missing = s.speaks.filter(g => !hit(g).length);
-
   const status = damaged.status;
-  const state = (status !== 0 && status !== 1 && status !== 2) ? 'CRASH'
-    : missing.length ? 'STALE'
-      : status === 2 ? 'LOUD'
-        : said.length ? 'SPOKE' : 'SILENT';
+  const { state, hit, said, useless, missing } = verdict({
+    damagedOut: damaged.out, healthyOut: healthy.out, status, speaks: s.speaks,
+  });
 
   let detail = 'exit ' + status;
   if (state === 'STALE')
@@ -418,5 +509,9 @@ if (silent.length) {
   console.log('\n  A run that returns nothing without saying why cannot be told from a clean run.');
   console.log('  That is the defect this whole tool reports in other people\'s code.');
 }
-if (silent.length || crashed.length || propertyFailed) process.exit(1);
+if (verdictFailed) {
+  console.log('\n  The scoring itself is wrong, so every row above is an opinion of');
+  console.log('  unknown value — including the ones that say nothing is the matter.');
+}
+if (silent.length || crashed.length || propertyFailed || verdictFailed) process.exit(1);
 if (skipped.length) process.exit(2);
