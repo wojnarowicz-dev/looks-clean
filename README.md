@@ -106,9 +106,9 @@ every bare `catch { return [] }` would be a linter with worse rules.
 
 ## How often it is wrong
 
-Four measurements. Two on six JavaScript projects, none of them mine; one on
-Java before 0.2.0 shipped, one on Dart before 0.3.0. None of them is averaged
-into another.
+Five measurements. Two on six JavaScript projects, none of them mine; one on
+Java before 0.2.0 shipped, one on Dart before 0.3.0, and one on two public
+Flutter projects before 0.4.0. None of them is averaged into another.
 
 The first two, side by side. They are printed side by side
 rather than as one corrected figure, because the tool changed between them and so
@@ -297,7 +297,7 @@ have carried were left out because nothing in the material matched them.
 Twenty checked at random out of eighty-nine is twenty checked. The other 53 are
 unread, and nothing here claims otherwise.
 
-### Dart — all twenty-two, not a sample of them
+### Dart in 0.3.0 — all twenty-two, not a sample of them
 
 Dart arrived in 0.3.0. It reported twenty-two findings on a 78-file Flutter
 application, which is few enough to read every one — so that is what this is.
@@ -343,8 +343,89 @@ and says nothing rather than reaching.
 **These are sites in a closed-source product**: the locations are withheld and
 the verdicts and causes published, exactly as for Java.
 
-Not measured: how the tool behaves on Dart that is not this application. One
-product, one style, one backend — every external read in it is the same kind.
+What this could not say was how the tool behaves on Dart that is not this
+application — one product, one style, one backend. That is the next section,
+and the answer was worse than expected.
+
+### Dart in 0.4.0 — two projects nobody here has worked on
+
+**0.3.0 read Dart through a table fitted to one application.** Its reads were
+counted on 78 files of a single product built on Supabase, where the table
+missed exactly one call. On two public Flutter projects it missed **170** —
+every `dart:io` file read, every `package:http` request, every sqflite query
+and every asset load. The tool reported those projects as having 100 and 90
+external reads when they have 188 and 175. 0.4.0 fixes it.
+
+The material is pinned, public and not ours: [localsend/localsend][ls] at
+`230fb69` and [openfoodfacts/smooth-app][sa] at `c64f954`, Apache-2.0 both,
+1 121 `.dart` files between them.
+
+[ls]: https://github.com/localsend/localsend
+[sa]: https://github.com/openfoodfacts/smooth-app
+
+<!-- lc:claim name=dartFreshReads value=363 -->
+<!-- lc:claim name=dartFreshReported value=45 -->
+<!-- lc:claim name=dartFreshChecked value=6 -->
+<!-- lc:claim name=dartFreshReal value=5 -->
+<!-- lc:claim name=dartFreshDeliberate value=1 -->
+<!-- lc:claim name=dartFreshNoise value=0 -->
+
+|  | 0.3.0 | 0.4.0 |
+|---|---:|---:|
+| external reads seen | 190 | **363** |
+| findings | 39 | **45** |
+
+Six findings is few enough to read every one, so that is what this is.
+
+| | all six |
+|---|---:|
+| **real defects** | **5** |
+| deliberate, and defensible | 1 |
+| **false alarms** | **0** |
+
+**The locations are published in full**, unlike the two samples above. Both
+projects are public and pinned, so a reader can open every line and disagree
+with the verdict.
+
+* **real** — `context_menu_helper.dart:30`. The success path returns
+  `await File(...).exists()`, which is legitimately false, and the catch
+  answers false as well.
+* **real** — `web_pages_loader.dart:37`. `null` means "no custom page
+  configured" on the line above and "could not read it" here. The weakest of
+  the six: it is logged, and the consequence is the built-in page.
+* **real** — `shared_preferences_file.dart:48`. The strongest. A corrupt
+  preferences file answers `{}` with no trace, which is what an empty one
+  answers, so the program starts on defaults and then writes them back.
+* **real** — `newsfeed_provider.dart:144`. The 404 branch composes a message
+  and throws it; the outer `catch (_)` turns it into `null`, which also means
+  "no news".
+* **real** — `product_preferences.dart:116`. Binds the error and never uses
+  it, so a failure to load the preference assets is silent.
+* **deliberate** — `background_task_image.dart:482`. `_isFileWritable` answers
+  false when `statSync` throws, and for a writability probe that is honestly
+  what "not writable" means.
+
+**Two of the three corrections in 0.4.0 could not be measured here, and that
+was said before they were written.** All 39 findings these projects had under
+0.3.0 have empty or comment-only handler bodies — not one logs, not one
+interpolates — so the two corrections aimed at those shapes could not move the
+number, and did not. Their evidence is a fixture shown failing before each
+fix, and a re-run on the closed application they came from, which went from
+22 findings to 16: every one of the six that record marks as a false alarm,
+and no real one. That re-run is recorded as a re-run. A third public project
+chosen **because** it contained the shape was offered and refused — selecting
+material by the defect you are about to fix is choosing the evidence for the
+verdict.
+
+**What the zero-movement condition caught.** The first version of one
+correction passed every test written for it and then removed four real
+findings from the Java material, which had not moved in three releases. A test
+derived from a single Dart pair did not survive contact with another language.
+Nothing shipped; the condition failed first.
+
+Not measured: whether these rows are right about Dart that uses neither
+`dart:io` nor `package:http` nor sqflite nor an asset bundle. Three projects
+is three projects.
 
 Every verdict in all four measurements was reached by reading the code at the
 cited line. The full record is in `test/precision.json`.
@@ -579,8 +660,16 @@ The best evidence that a tool works is that it was turned on its author.
    population in the run. The only trace would have been a different number of
    findings.
 
-The self-check is clean now, and the four sites where a swallowed failure is the
-right answer carry a written `// looks-clean: ok — reason` saying why.
+<!-- lc:claim name=selfCheckFindings value=2 -->
+<!-- lc:claim name=selfCheckMuted value=7 -->
+
+**The self-check is not clean, and this sentence used to say it was.** It
+reports **2** findings on `src`, and **7** sites carry a written
+`// looks-clean: ok — reason` saying why a swallowed failure is the right
+answer there. The earlier wording — "clean now", and four muted sites — was
+true when it was written and then stopped being true, with nothing comparing
+it to anything. Both numbers are now read from a real run of the tool on its
+own source every time this page is checked.
 
 ## Taken from odd-one-out
 

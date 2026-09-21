@@ -77,6 +77,32 @@ function scanCount(dir) {
   return n;
 }
 
+// THE SELF-CHECK, MEASURED RATHER THAN DESCRIBED. The page said "the
+// self-check is clean now" and named four muted sites. The tool says two
+// findings and seven mutes, and has done for some time — the sentence was
+// written once, was true once, and nothing was comparing it to anything.
+// This is the page committing the subject matter of the tool it documents.
+//
+// Deliberately NOT --config CONFIG: self-check runs against the repository's
+// own .looks-clean.json, and a different exclusion list is a different run.
+function selfScan() {
+  const snap = path.join(ROOT, '.looks-clean', 'readme-check-self.json');
+  const r = spawnSync(process.execPath,
+    [CLI, 'scan', 'src', '--lang', 'en', '--json', snap],
+    { cwd: ROOT, encoding: 'utf8', maxBuffer: 1e9 });
+  if (!fs.existsSync(snap)) throw new Error('self-scan wrote nothing (exit ' + r.status + ')');
+  const run = JSON.parse(fs.readFileSync(snap, 'utf8'));
+  try { fs.rmSync(snap, { force: true }); } catch { /* leaves no harm */ }
+  // THE MUTE COUNT COMES FROM THE OUTPUT, NOT THE SNAPSHOT, because the
+  // snapshot does not carry it: `mutedCount` there counts mutes from the
+  // config file, and comment mutes are applied afterwards, when the line is
+  // known. So the tool prints a number it does not record. Read from stdout
+  // here, which is the number the page quotes, and noted in the tracker.
+  const m = String(r.stdout || '').match(/muted by comment: (\d+)/);
+  return { findings: run.findings.length, muted: m ? Number(m[1]) : 0 };
+}
+const self = selfScan();
+
 // The layer list and the known-answer table are read from the files that own
 // them, so adding a layer or an answer without touching the README fails here.
 const layersSource = fs.readFileSync(path.join(HERE, 'all.mjs'), 'utf8');
@@ -209,7 +235,13 @@ for (const smp of precision.languageSamples || []) {
   // Dart reported twenty-two, which is few enough to read all of, so there is
   // one part and it is the whole. Hard-coding the two halves would have made
   // the honest record the one the gate could not check.
-  const parts = [['random', smp.randomSample], ['first', smp.firstSample], ['all', smp.sample]]
+  // A FOURTH SHAPE, AND THE COMMENT ABOVE PREDICTED IT. A release that adds
+  // findings to a population already measured reads the NEW ones, and calling
+  // that `sample` would have been a lie about what was checked. Hard-coding
+  // three names had made the honest record the one this gate could not see —
+  // the same mistake, one shape later.
+  const parts = [['random', smp.randomSample], ['first', smp.firstSample],
+    ['all', smp.sample], ['new', smp.newFindings]]
     .filter(([, part]) => part);
   check(smp.language + ': the record carries at least one sample', parts.length > 0,
     parts.map(p => p[0]).join(', ') || 'none');
@@ -339,8 +371,22 @@ const earlier = precision.measurements[0];
 // exactly the promise this tool exists to catch: a number that reads clean
 // because of what it left out.
 const javaSample = (precision.languageSamples || []).find(s => s.language === 'java');
-const dartSample = (precision.languageSamples || []).find(s => s.language === 'dart');
+// PINNED BY ID, NOT BY LANGUAGE. From 0.4.0 there are two Dart samples — the
+// closed application measured before 0.3.0, and the two public projects
+// measured before 0.4.0. A find() on the language alone would have silently
+// answered with whichever was written first, and every Dart claim on the page
+// would have followed it.
+const dartSample = (precision.languageSamples || [])
+  .find(s => s.id === '2026-09-21-dart-flutter-app');
+const freshDartSample = (precision.languageSamples || [])
+  .find(s => s.id === '2026-09-21-dart-two-public-projects');
+const freshDartChange = (precision.changeChecks || [])
+  .find(c => c.id === '2026-09-21-dart-sees-past-one-application');
 check('a dart sample is recorded', !!dartSample, dartSample ? dartSample.id : 'none');
+check('the 0.4.0 dart sample is recorded', !!freshDartSample,
+  freshDartSample ? freshDartSample.id : 'none');
+check('the 0.4.0 change check is recorded', !!freshDartChange,
+  freshDartChange ? freshDartChange.id : 'none');
 check('a java sample is recorded', !!javaSample, javaSample ? javaSample.id : 'none');
 const noisyRules = javaSample
   ? new Set([...javaSample.randomSample.findings, ...javaSample.firstSample.findings]
@@ -371,6 +417,8 @@ const TRUTH = {
   fixturePlanted: plantedCount,
   cleanFindings: scanCount(path.join(HERE, 'fixtures', 'clean')),
   defaultExclusions: DEFAULT_EXCLUDE.length,
+  selfCheckFindings: self.findings,
+  selfCheckMuted: self.muted,
   javaSampleReported: javaSample && javaSample.reported,
   javaRandomChecked: javaSample && javaSample.randomSample.checked,
   javaRandomReal: javaSample && javaSample.randomSample.real,
@@ -386,6 +434,13 @@ const TRUTH = {
   dartReal: dartSample && dartSample.sample.real,
   dartDeliberate: dartSample && dartSample.sample.deliberate,
   dartNoise: dartSample && dartSample.sample.noise,
+  // The 0.4.0 measurement, kept beside the 0.3.0 one rather than replacing it.
+  dartFreshReads: freshDartChange && freshDartChange.dartTotals.readsAfter,
+  dartFreshReported: freshDartSample && freshDartSample.reported,
+  dartFreshChecked: freshDartSample && freshDartSample.newFindings.checked,
+  dartFreshReal: freshDartSample && freshDartSample.newFindings.real,
+  dartFreshDeliberate: freshDartSample && freshDartSample.newFindings.deliberate,
+  dartFreshNoise: freshDartSample && freshDartSample.newFindings.noise,
 };
 
 // ---------------------------------------------------------------- 1. claims
@@ -575,6 +630,19 @@ for (const [file, lang] of PAGES) {
 
 // ---------------------------------------------------------------- 6. the licence
 //
+// AND THE RECORD SAYS WHICH TOOL PRODUCED IT. precision.json carries a
+// toolVersion, and it read 0.1.0 through the whole of 0.2.0, 0.2.1 and 0.3.0
+// — three releases of measurements filed under the version that did not make
+// them. Nothing was comparing the two, so nothing said so.
+//
+// The per-measurement toolVersion fields are NOT checked against this: an old
+// measurement is supposed to name the old tool, and forcing those to match
+// would destroy the one thing the record is for. Only the top-level field,
+// which says what this file describes NOW, has to be the version in hand.
+check('the record names the version that produced it',
+  precision.toolVersion === pkg.version,
+  'record ' + precision.toolVersion + ', package ' + pkg.version);
+
 // THREE PLACES SAY WHAT THE LICENCE IS — the LICENSE file, package.json, and a
 // line at the bottom of each page — and there is nothing to stop them drifting
 // apart. Two of them agreeing while the third says something else is the worst

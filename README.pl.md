@@ -108,7 +108,7 @@ regułami.
 
 ## Jak często się myli
 
-Cztery pomiary. Dwa na sześciu projektach w JavaScripcie, żaden nie jest mój;
+Pięć pomiarów. Dwa na sześciu projektach w JavaScripcie, żaden nie jest mój;
 jeden na Javie przed 0.2.0, jeden na Darcie przed 0.3.0. Żaden nie jest
 uśredniony w inny.
 
@@ -300,7 +300,7 @@ pisana z pamięci by niosła, wypadły, bo nic w materiale do nich nie pasowało
 Dwadzieścia sprawdzonych losowo z osiemdziesięciu dziewięciu to dwadzieścia
 sprawdzonych. Pozostałych 53 nikt nie przeczytał i nic tu nie twierdzi inaczej.
 
-### Dart — wszystkie dwadzieścia dwa, nie próbka
+### Dart w 0.3.0 — wszystkie dwadzieścia dwa, nie próbka
 
 Dart wszedł w 0.3.0. Zgłosił dwadzieścia dwa miejsca na 78-plikowej aplikacji
 Flutter — na tyle mało, że dało się przeczytać każde. „Dwadzieścia dwa z
@@ -345,9 +345,90 @@ pracować — i milczy, zamiast sięgać.
 **To są miejsca w programie o zamkniętym źródle**: lokalizacje zatrzymane,
 werdykty i przyczyny opublikowane, dokładnie jak przy Javie.
 
-Niezmierzone: jak narzędzie zachowuje się na Darcie spoza tej aplikacji. Jeden
-produkt, jeden styl, jeden backend — każdy odczyt zewnętrzny w nim jest tego
-samego rodzaju.
+Czego ten pomiar nie mógł powiedzieć: jak narzędzie zachowuje się na Darcie
+spoza tej aplikacji — jeden produkt, jeden styl, jeden backend. O tym jest
+następna sekcja, a odpowiedź okazała się gorsza, niż zakładano.
+
+### Dart w 0.4.0 — dwa projekty, przy których nikt stąd nie pracował
+
+**0.3.0 czytało Dart przez tablicę dopasowaną do jednej aplikacji.** Jej
+odczyty policzono na 78 plikach jednego produktu opartego na Supabase, gdzie
+tablica przeoczyła dokładnie jedno wywołanie. Na dwóch publicznych projektach
+Fluttera przeoczyła **170** — każdy odczyt pliku z `dart:io`, każde żądanie
+`package:http`, każde zapytanie sqflite i każde wczytanie zasobu. Narzędzie
+raportowało w tych projektach 100 i 90 odczytów zewnętrznych, podczas gdy jest
+ich 188 i 175. 0.4.0 to naprawia.
+
+Materiał jest przypięty, publiczny i nie nasz: [localsend/localsend][ls] na
+`230fb69` i [openfoodfacts/smooth-app][sa] na `c64f954`, oba Apache-2.0,
+razem 1 121 plików `.dart`.
+
+[ls]: https://github.com/localsend/localsend
+[sa]: https://github.com/openfoodfacts/smooth-app
+
+<!-- lc:claim name=dartFreshReads value=363 -->
+<!-- lc:claim name=dartFreshReported value=45 -->
+<!-- lc:claim name=dartFreshChecked value=6 -->
+<!-- lc:claim name=dartFreshReal value=5 -->
+<!-- lc:claim name=dartFreshDeliberate value=1 -->
+<!-- lc:claim name=dartFreshNoise value=0 -->
+
+|  | 0.3.0 | 0.4.0 |
+|---|---:|---:|
+| widziane odczyty zewnętrzne | 190 | **363** |
+| zgłoszenia | 39 | **45** |
+
+Sześć zgłoszeń to na tyle mało, że dało się przeczytać każde — i tak zrobiono.
+
+| | wszystkie sześć |
+|---|---:|
+| **prawdziwe usterki** | **5** |
+| celowe i do obrony | 1 |
+| **fałszywe alarmy** | **0** |
+
+**Lokalizacje są opublikowane w całości**, inaczej niż w dwóch próbkach wyżej.
+Oba projekty są publiczne i przypięte do rewizji, więc czytelnik może otworzyć
+każdą linię i nie zgodzić się z werdyktem.
+
+* **prawdziwe** — `context_menu_helper.dart:30`. Ścieżka sukcesu zwraca
+  `await File(...).exists()`, które legalnie bywa fałszem, a `catch` też
+  odpowiada fałszem.
+* **prawdziwe** — `web_pages_loader.dart:37`. `null` znaczy „nie ustawiono
+  własnej strony" w linii wyżej i „nie dało się jej przeczytać" tutaj.
+  Najsłabsze z sześciu: jest logowane, a skutkiem jest strona wbudowana.
+* **prawdziwe** — `shared_preferences_file.dart:48`. Najmocniejsze.
+  Uszkodzony plik ustawień odpowiada `{}` bez śladu — tak samo jak pusty —
+  więc program startuje na wartościach domyślnych i zaraz je zapisuje.
+* **prawdziwe** — `newsfeed_provider.dart:144`. Gałąź 404 składa komunikat i
+  rzuca go; zewnętrzny `catch (_)` zamienia to w `null`, co znaczy też
+  „nie ma nowości".
+* **prawdziwe** — `product_preferences.dart:116`. Wiąże błąd i nigdy go nie
+  używa, więc nieudane wczytanie zasobów z ustawieniami jest nieme.
+* **celowe** — `background_task_image.dart:482`. `_isFileWritable` odpowiada
+  fałszem, gdy `statSync` rzuci, a dla sondy zapisywalności to uczciwie znaczy
+  „nie da się zapisać".
+
+**Dwóch z trzech poprawek w 0.4.0 nie dało się tu zmierzyć i powiedziano to,
+zanim je napisano.** Wszystkie 39 zgłoszeń, które te projekty miały pod 0.3.0,
+mają ciała obsług puste albo złożone z samego komentarza — ani jedno nie
+loguje, ani jedno nie interpoluje — więc poprawki wymierzone w te kształty nie
+mogły ruszyć tej liczby i nie ruszyły. Ich dowodem jest fikstura pokazana na
+czerwono przed każdą poprawką oraz powtórka na zamkniętej aplikacji, z której
+wyszły: z 22 zgłoszeń zrobiło się 16 — zniknęło każde z sześciu, które tamten
+zapis oznacza jako fałszywy alarm, i żadne prawdziwe. Ta powtórka jest
+zapisana jako powtórka. Trzeci publiczny projekt wybrany **dlatego**, że
+zawierał ten kształt, był proponowany i odrzucony: dobieranie materiału pod
+usterkę, którą się właśnie naprawia, to wybieranie dowodu pod wyrok.
+
+**Co złapał warunek zera ruchu.** Pierwsza wersja jednej z poprawek przeszła
+wszystkie napisane dla niej testy, a potem usunęła cztery prawdziwe zgłoszenia
+z materiału w Javie, który nie drgnął przez trzy wydania. Test wyprowadzony z
+jednej dartowej pary nie przeżył zderzenia z drugim językiem. Nic nie wyszło
+na zewnątrz — warunek oblał pierwszy.
+
+Niezmierzone: czy te wiersze mają rację co do Darta, który nie używa ani
+`dart:io`, ani `package:http`, ani sqflite, ani pakietu zasobów. Trzy
+projekty to trzy projekty.
 
 Każdy werdykt we wszystkich czterech pomiarach zapadł po przeczytaniu kodu w
 cytowanej linii. Pełny zapis leży w `test/precision.json`.
@@ -583,9 +664,16 @@ Najlepszym dowodem, że narzędzie działa, jest skierowanie go na własnego aut
    zmienia listę wykluczeń, co zmienia każdą populację w przebiegu. Jedynym
    śladem byłaby inna liczba zgłoszeń.
 
-Self-check jest teraz czysty, a cztery miejsca, w których połknięta awaria jest
-właściwą odpowiedzią, noszą wypisany `// looks-clean: ok — powód` z
-uzasadnieniem.
+<!-- lc:claim name=selfCheckFindings value=2 -->
+<!-- lc:claim name=selfCheckMuted value=7 -->
+
+**Self-check nie jest czysty, a to zdanie twierdziło, że jest.** Zgłasza **2**
+miejsca w `src`, a **7** miejsc nosi wypisany `// looks-clean: ok — powód`
+mówiący, dlaczego połknięta awaria jest tam właściwą odpowiedzią. Wcześniejsze
+brzmienie — „czysty teraz" i cztery wyciszone miejsca — było prawdziwe, gdy je
+pisano, a potem przestało, i nic tego z niczym nie porównywało. Obie liczby są
+teraz odczytywane z prawdziwego przebiegu narzędzia na własnych źródłach przy
+każdym sprawdzeniu tej strony.
 
 ## Wzięte z odd-one-out
 

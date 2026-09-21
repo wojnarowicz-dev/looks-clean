@@ -9,7 +9,7 @@
     "A project that reports nothing is a result and is recorded with the reason. A zero for a reason that is not about precision — the wrong shape of project, or a defect in the tool — says so."
   ],
   "_twoNumbers": "Two measurements from two runs are kept side by side rather than one number corrected. The tool changed between them — test directories are now excluded by default — and so did the material. A single revised figure would hide both facts.",
-  "toolVersion": "0.1.0",
+  "toolVersion": "0.4.0",
   "measurements": [
     {
       "id": "2026-09-07-before-test-exclusion",
@@ -877,6 +877,122 @@
           "identical": true
         }
       ]
+    },
+    {
+      "id": "2026-09-21-dart-sees-past-one-application",
+      "date": "2026-09-21",
+      "change": "Three corrections in one release. The trace vocabulary learns two Dart spellings; rule 2 stops reporting a command whose value goes nowhere; the Dart read table gains fs, net, db and assets rows built from a counter over 1 121 files.",
+      "why": "Measured with 0.3.0 on two public Flutter projects. The read table shipped in 0.3.0 had been counted on one application, where it missed a single read. On these two it missed 170.",
+      "method": "Every project scanned before and after each of the three commits, at default settings from a neutral working directory. Findings compared by rule, file, line and label — never by count alone.",
+      "comparedOn": "six pinned JavaScript projects, one Java directory pinned to 6bf5971^, two pinned public Dart projects, and a repeat on the closed application the first two corrections came from",
+      "repeatOnTheOriginalMaterial": {
+        "whatThisIsNot": "Not fresh evidence. This is the closed application the first two corrections were derived from, re-run on the material that produced them. It is recorded as a repeat for that reason and is not averaged with anything.",
+        "findingsBefore": 22,
+        "findingsAfter": 16,
+        "removed": [
+          "D-01",
+          "D-03",
+          "D-14",
+          "D-19",
+          "D-20",
+          "D-22"
+        ],
+        "removedVerdicts": "every one of the six is a finding the 0.3.0 record marks as noise, and they are all six of them",
+        "removedReal": 0,
+        "added": 0
+      },
+      "freshMaterialCouldNotMeasureTheFirstTwo": "Stated in advance, so that a zero afterwards is not read as success. All 39 findings on the two public projects have empty or comment-only handler bodies — not one logs, not one interpolates — so neither of the first two corrections could move that number, and neither did. Their evidence is the fixtures, each shown failing before its fix, and the repeat above. A third project chosen BECAUSE it contained the shape was offered and refused: selecting material by the shape you are about to fix is choosing the evidence for the verdict.",
+      "notMeasured": "Whether rule 4 is right on Dart. It has reported nothing on every Dart project measured so far, and a defect found during this release explains part of why: a return inside a Dart catch is labelled `normal` rather than `failure`, because the catch body is a sibling of the clause and pathOf walks parents. Left unfixed here — it moves Dart numbers and is its own unit.",
+      "projects": [
+        {
+          "name": "got",
+          "language": "js",
+          "findingsBefore": 9,
+          "findingsAfter": 9,
+          "identical": true
+        },
+        {
+          "name": "uptime-kuma",
+          "language": "js",
+          "findingsBefore": 28,
+          "findingsAfter": 28,
+          "identical": true
+        },
+        {
+          "name": "eslint",
+          "language": "js",
+          "findingsBefore": 13,
+          "findingsAfter": 13,
+          "identical": true,
+          "note": "passedOver 91 -> 90 with no finding moving. printResults in lib/cli.js writes a file and answers a flag, and is already recorded in the JavaScript sample as noise under predicate-failure-read-as-empty. It was never reported, only passed over in silence, and it is no longer a candidate for a rule about empty results because it has none."
+        },
+        {
+          "name": "node-red",
+          "language": "js",
+          "findingsBefore": 0,
+          "findingsAfter": 0,
+          "identical": true,
+          "zeroBecause": "Unchanged from the earlier records: node-red keeps its source under packages/node_modules/, which the built-in exclusion swallows. Still a zero that means \"I did not look\", still recorded unfixed."
+        },
+        {
+          "name": "verdaccio",
+          "language": "js",
+          "findingsBefore": 27,
+          "findingsAfter": 27,
+          "identical": true
+        },
+        {
+          "name": "fastify",
+          "language": "js",
+          "findingsBefore": 0,
+          "findingsAfter": 0,
+          "identical": true,
+          "zeroBecause": "A legitimate zero: a web framework receives calls rather than making them, so rules 2 and 3 have almost nothing to group."
+        },
+        {
+          "name": "java managers at 6bf5971^",
+          "language": "java",
+          "findingsBefore": 83,
+          "findingsAfter": 83,
+          "identical": true,
+          "whatTheConditionCaught": "The first version of the command test called a function a command when every one of its returns was a literal. It passed every test written for it and then removed FOUR REAL findings here: `if (!Files.isRegularFile(p)) { return false; }` returns constants too, but the read decides which one, so false really does mean both \"not there\" and \"could not tell\". A test derived from one Dart pair did not survive contact with another language. Nothing shipped — this row is what caught it."
+        },
+        {
+          "name": "localsend at 230fb69",
+          "language": "dart",
+          "findingsBefore": 10,
+          "findingsAfter": 13,
+          "identical": false,
+          "readsBefore": 100,
+          "readsAfter": 188,
+          "note": "three new findings, all read in the source: two real under rule 2, one real under rule 1"
+        },
+        {
+          "name": "smooth-app at c64f954",
+          "language": "dart",
+          "findingsBefore": 29,
+          "findingsAfter": 32,
+          "identical": false,
+          "readsBefore": 90,
+          "readsAfter": 175,
+          "note": "three new findings, all read in the source: two real under rule 1, one deliberate"
+        }
+      ],
+      "findingsBefore": 199,
+      "findingsAfter": 205,
+      "identical": false,
+      "whatMovedAndWhatDidNot": "Seven of the nine rows are identical and two are not, which is the whole claim of this release: JavaScript and Java must not move, and Dart must. The two that moved are the two projects the read table had been blind to.",
+      "dartTotals": {
+        "findingsBefore": 39,
+        "findingsAfter": 45,
+        "readsBefore": 190,
+        "readsAfter": 363,
+        "newFindings": 6,
+        "newReal": 5,
+        "newDeliberate": 1,
+        "newNoise": 0,
+        "alsoMoved": "passedOver 0 -> 90 and 0 -> 89, noConvention 0 -> 82 and 0 -> 68. Not silence: the reads now exist, most of their layers have no convention yet, and the run header counts and names both."
+      }
     }
   ],
   "_languageSamples": "A precision sample taken when a new language is added, before the version that claims to support it ships. Three verdicts, not two: a site can be a defect, a deliberate and defensible choice, or a finding the tool should not have made. Only the last is noise.",
@@ -1441,6 +1557,92 @@
       ],
       "notMeasured": "How the tool behaves on Dart that is not this application. One product, one style, one backend — every external read in it is the same kind, so rules 2 and 3 were exercised against a single family and rule 4 against almost nothing.",
       "locations": "THE VERDICTS ARE PUBLISHED, THE LOCATIONS ARE NOT, for the reason the Java record gives: fifteen of these are real defects in a product that is sold. Each site carries a stable identifier D-01..D-22, assigned in alphabetical order of the location so the numbering carries neither verdict nor rank. The map back to file and line lives with the product, outside this repository."
+    },
+    {
+      "id": "2026-09-21-dart-two-public-projects",
+      "date": "2026-09-21",
+      "language": "dart",
+      "toolVersion": "0.4.0",
+      "commit": "c94e038",
+      "material": "two public Flutter applications, pinned to a revision — localsend/localsend at 230fb692962668ca22ce0e61a8f53ce1cfd32102 and openfoodfacts/smooth-app at c64f9547f00c7d59e67e79420b32f1436a74ee2d, Apache-2.0 both, 1 121 .dart files between them",
+      "run": "scan <each project root>, default layer and minpop, no config and no flags",
+      "whyThisMaterial": "The 0.3.0 measurement was made on one closed application. It could say nothing about Dart written against a different backend, and the read table it produced turned out to be fitted to that one application — which is the thing this measurement exists to catch.",
+      "reported": 45,
+      "reportedBefore": 39,
+      "method": "The six findings this release ADDS were read, all of them, in the source at the cited line. Six is far below the threshold of thirty at which a random sample would have been drawn instead. The thirty-nine already there are the 0.3.0 population; they did not move.",
+      "verdicts": {
+        "real": "a caller or the user can be shown a wrong state because of this site",
+        "deliberate": "the collapse is real and the author chose it, and the consequence is confined",
+        "noise": "the tool should not have made this finding — its claim about the site is false"
+      },
+      "newFindings": {
+        "checked": 6,
+        "real": 5,
+        "deliberate": 1,
+        "noise": 0,
+        "findings": [
+          {
+            "ref": "L-01",
+            "rule": "default-on-error",
+            "verdict": "real",
+            "site": "localsend app/lib/util/native/context_menu_helper.dart:30",
+            "note": "the success path returns await File(...).exists(), which is legitimately false, and the catch answers false as well"
+          },
+          {
+            "ref": "L-02",
+            "rule": "default-on-error",
+            "verdict": "real",
+            "site": "localsend app/lib/util/native/web_pages_loader.dart:37",
+            "note": "null means \"no custom page configured\" on the line above and \"could not read it\" here. The weakest of the six: it is logged, and the consequence is the built-in page"
+          },
+          {
+            "ref": "L-03",
+            "rule": "swallowed",
+            "verdict": "real",
+            "site": "localsend app/lib/util/shared_preferences/shared_preferences_file.dart:48",
+            "note": "the strongest of the six. A corrupt preferences file answers {} with no trace, which is what an empty one answers, so the program starts on defaults and then writes them back"
+          },
+          {
+            "ref": "S-01",
+            "rule": "swallowed",
+            "verdict": "real",
+            "site": "smooth-app packages/smooth_app/lib/data_models/news_feed/newsfeed_provider.dart:144",
+            "note": "the 404 branch composes a message and throws it; the outer catch turns it into null, which also means \"no news\""
+          },
+          {
+            "ref": "S-02",
+            "rule": "swallowed",
+            "verdict": "real",
+            "site": "smooth-app packages/smooth_app/lib/data_models/product_preferences.dart:116",
+            "note": "binds the error and never uses it, so a failure to load the preference assets is silent"
+          },
+          {
+            "ref": "S-03",
+            "rule": "swallowed",
+            "verdict": "deliberate",
+            "site": "smooth-app packages/smooth_app/lib/background/background_task_image.dart:482",
+            "note": "_isFileWritable answers false when statSync throws, and for a writability probe that is honestly what \"not writable\" means. A judgement call, and against the letter of the definition above, which asks for the choice to be stated in a comment — there is none"
+          }
+        ],
+        "perRule": {
+          "default-on-error": {
+            "checked": 2,
+            "real": 2,
+            "deliberate": 0,
+            "noise": 0
+          },
+          "swallowed": {
+            "checked": 4,
+            "real": 3,
+            "deliberate": 1,
+            "noise": 0
+          }
+        },
+        "causes": {}
+      },
+      "locations": "PUBLISHED IN FULL, unlike the Java sample and the closed Dart one. Both projects are public and pinned, so a reader can open every line above and disagree with the verdict.",
+      "whatThisAdds": "The 0.3.0 numbers came from one application, written by the author of this tool. These come from two the author has never worked on, and they are the first Dart numbers that could have contradicted the release.",
+      "notMeasured": "Whether the rows added in 0.4.0 are right about Dart that uses neither dart:io nor package:http nor sqflite nor an asset bundle. Three projects is three projects."
     }
   ]
 }
