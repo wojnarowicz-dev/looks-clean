@@ -14,7 +14,6 @@
 // is a small lie that costs a lot of trust.
 import { classify, normaliseText, unwrap } from './values.mjs';
 import { familyOf, timeoutMarker } from './reads.mjs';
-import * as JS from './syntax/js.mjs';
 
 // WHICH NODE IS WHAT — this lived here and has moved to src/syntax/.
 // This module asks the questions ("is this a call", "what does this clause
@@ -67,8 +66,14 @@ function errorNamesInCondition(cond, syn) {
  * @param file   the path reported to the reader (already relative)
  * @param off    line offset, non-zero only for inline <script>
  * @param syn    the node vocabulary of this file's language, from src/syntax/
+ *
+ * `syn` HAS NO DEFAULT. A default would be one language chosen by silence, and
+ * the whole of the previous commit's measurement was what that produces: a file
+ * read through the wrong vocabulary parses, answers "no" to every question and
+ * contributes nothing, which is indistinguishable from a file with nothing in it.
  */
-export function analyse(tree, file, off = 0, syn = JS) {
+export function analyse(tree, file, off = 0, syn) {
+  if (!syn) throw new Error('analyse: no node vocabulary for ' + file);
   const root = tree.rootNode;
   const functions = [];
   const handlers = [];
@@ -93,6 +98,7 @@ export function analyse(tree, file, off = 0, syn = JS) {
         startIndex: node.startIndex,
         endIndex: node.endIndex,
         parent: enclosingFn() ? enclosingFn().id : null,
+        lang: syn.name,
         node,
         returns: [],
       };
@@ -115,11 +121,12 @@ export function analyse(tree, file, off = 0, syn = JS) {
     // ---- reads
     if (syn.isCall(node)) {
       const callee = syn.calleeText(node);
-      const fam = familyOf(callee, syn.chainHead(node));
+      const fam = familyOf(callee, syn.chainHead(node), syn.name);
       if (fam) {
         const stmt = enclosingStatement(node, syn);
         reads.push({
           file,
+          lang: syn.name,
           line: rowOf(node, off),
           callee,
           family: fam,
@@ -177,6 +184,7 @@ export function analyse(tree, file, off = 0, syn = JS) {
     const effects = handlerEffects(body, binding);
     return {
       file,
+      lang: syn.name,
       kind,
       line: rowOf(node, off),
       bodyLine: body ? rowOf(body, off) : rowOf(node, off),
@@ -247,16 +255,16 @@ export function analyse(tree, file, off = 0, syn = JS) {
   function handlerAnswer(body, offset) {
     if (!body) return null;
     if (!syn.isBlock(body)) {
-      const c = classify(body);
-      return { ...c, line: rowOf(body, offset), text: normaliseText(unwrap(body).text).slice(0, 80) };
+      const c = classify(body, syn);
+      return { ...c, line: rowOf(body, offset), text: normaliseText(unwrap(body, syn).text).slice(0, 80) };
     }
     let found = null;
     walk(body, n => {
       if (found) return;
       if (n.type === 'return_statement') {
         const v = n.namedChildCount ? n.namedChild(0) : null;
-        const c = classify(v);
-        found = { ...c, line: rowOf(n, offset), text: v ? normaliseText(unwrap(v).text).slice(0, 80) : 'undefined' };
+        const c = classify(v, syn);
+        found = { ...c, line: rowOf(n, offset), text: v ? normaliseText(unwrap(v, syn).text).slice(0, 80) : 'undefined' };
       }
     });
     if (found) return found;
@@ -266,7 +274,7 @@ export function analyse(tree, file, off = 0, syn = JS) {
       if (found) return;
       if (n.type === 'assignment_expression') {
         const r = n.childForFieldName('right');
-        const c = classify(r);
+        const c = classify(r, syn);
         if (c.kind === 'ambiguous') {
           const l = n.childForFieldName('left');
           found = {
@@ -297,14 +305,14 @@ export function analyse(tree, file, off = 0, syn = JS) {
    * simple enough not to need it.
    */
   function makeReturn(node, value, fn) {
-    const c = classify(value);
+    const c = classify(value, syn);
     return {
       line: rowOf(node, off),
       path: pathOf(node, fn),
       kind: c.kind,
       value: c.value,
       potential: potentialEmpty(value),
-      text: value ? normaliseText(unwrap(value).text).slice(0, 80) : 'undefined',
+      text: value ? normaliseText(unwrap(value, syn).text).slice(0, 80) : 'undefined',
     };
   }
 
@@ -328,8 +336,8 @@ export function analyse(tree, file, off = 0, syn = JS) {
 
   function potentialEmpty(value) {
     if (!value) return 'undefined';
-    const n = unwrap(value);
-    const c = classify(n);
+    const n = unwrap(value, syn);
+    const c = classify(n, syn);
     if (c.kind === 'ambiguous') return c.value;
     if (n.type === 'binary_expression') {
       const op = n.childForFieldName('operator');

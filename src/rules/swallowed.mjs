@@ -50,7 +50,7 @@ export function run(ir, ctx) {
     // group of 'all handlers' is coarser evidence about any one site, and a
     // coarser group is a larger population, which the score would read as a
     // STRONGER claim. Same notion of 'the same kind of work' everywhere.
-    keyOf: h => h.family || 'none',
+    keyOf: h => h.lang + ' ' + (h.family || 'none'),
     minpop: ctx.minpop,
     mode: ctx.layerMode,
   });

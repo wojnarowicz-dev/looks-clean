@@ -14,11 +14,15 @@
 // Grouping too finely (by exact callee text) would leave every group with one
 // member and the rule would find nothing while saying nothing — the failure
 // mode this tool is named after.
+//
+// THE TABLE IS PER LANGUAGE, THE FAMILY NAMES ARE NOT. `fs` means the same kind
+// of work in both languages, so a finding reads the same way whichever file it
+// came from; but `readFileSync` and `Files.readString` are matched only against
+// the language that can contain them. One table for both would let a Java
+// spelling claim a JavaScript call, and a wrong match here is not a cosmetic
+// error: a false read joins a population and shifts the conventionality of every
+// real finding in the same group.
 
-/**
- * Ordered matchers over the callee text. First match wins, so the specific
- * patterns come before the general ones.
- */
 // The words a supabase chain is built from, and the operations it ends on.
 // BOTH HALVES ARE NEEDED, and each half was got wrong once:
 //   * requiring only the ending  -> `list.remove(i)` became a database read
@@ -32,8 +36,7 @@
 const SUPABASE_CHAIN = new Set(['from', 'rpc', 'storage', 'auth', 'functions', 'realtime', 'channel']);
 const SUPABASE_TAIL = /^(select|insert|update|upsert|delete|rpc|download|upload|remove|list|signIn\w*|signUp|signOut|getUser|getSession|refreshSession|invoke)$/;
 
-const FAMILIES = [
-  ['supabase', null, null],   // handled by shape, below
+const JS_FAMILIES = [
   ['net', /^(fetch|axios|got|ky|superagent|request)$|^(axios|got|ky|http|https)\.(get|post|put|patch|delete|head|request)$|\.(fetch)$|XMLHttpRequest/],
   // `.find(` and `.filter(` are NOT here, and that is a correction rather than
   // an omission. With `\.find$` in the pattern, `data.users.find(u => ...)` —
@@ -49,8 +52,47 @@ const FAMILIES = [
   ['dynamic-import', /^import$/],
 ];
 
+// JAVA: JDK ONLY, AND WRITTEN FROM A COUNT RATHER THAN FROM MEMORY.
+//
+// Every pattern below was chosen after counting what a real 117-file Java tree
+// actually calls: `Files.*` 459 times, `.send` 16 (every one of them
+// `HttpClient.send`), `.waitFor` 6. Three shapes that a table written from
+// memory would have carried were left OUT because the count found nothing for
+// them to match, and a row that matches nothing is invisible to every other
+// test layer while still making the vocabulary look complete:
+//
+//   * db    — 0 JDBC calls in the material. No `executeQuery`, no
+//             `getConnection`. A `db` row for Java would be a dead row.
+//   * parse — the only `.parse` calls were `Instant.parse` and
+//             `LocalDateTime.parse`, which read a string this program already
+//             holds. That is not an external read, and JSON in Java arrives
+//             through libraries that are not the JDK.
+//   * Runtime.getRuntime.exec — present in the table because it is the
+//             idiomatic spelling, but the material calls `Runtime.getRuntime()`
+//             only for `maxMemory` and `availableProcessors`, which are JVM
+//             statistics and not reads. The pattern is anchored to `.exec` so
+//             those cannot match.
+//
+// PROJECT WRAPPERS ARE NOT IN HERE EITHER. The tree this was measured against
+// routes much of its IO through a `SafeIo` helper, and adding it would have
+// been fitting the tool to one codebase in order to pass one test. The cost is
+// stated rather than hidden: handlers standing over a project's own IO wrapper
+// have no family, so they join no population and are neither reported nor
+// counted as well-behaved neighbours.
+const JAVA_FAMILIES = [
+  ['net', /^(HttpClient|HttpRequest)\.|\.(send|sendAsync|openConnection|openStream)$/],
+  ['proc', /\.waitFor$|^Runtime\.getRuntime\.exec$/],
+  ['fs', /^Files\.|^new(FileInputStream|FileOutputStream|FileReader|FileWriter|RandomAccessFile)$/],
+];
+
+const FAMILIES = { js: JS_FAMILIES, java: JAVA_FAMILIES };
+
 /**
  * The family of a call, or null when the call is not a read.
+ *
+ * @param calleeText the callee, as the language's vocabulary spells it
+ * @param chainHead  the head of the call chain
+ * @param lang       which table to use — the `name` of a src/syntax/ module
  *
  * SUPABASE IS MATCHED BY THE SHAPE OF THE CHAIN, not by the name at its head.
  *
@@ -69,20 +111,26 @@ const FAMILIES = [
  * not one; `list.remove(i)` ends on an operation without passing through
  * anything, so neither is it.
  */
-export function familyOf(calleeText, chainHead) {
+export function familyOf(calleeText, chainHead, lang) {
+  const table = FAMILIES[lang];
+  // NO DEFAULT LANGUAGE. A table picked by fallback would read one language's
+  // source through another's spellings and answer "not a read" to nearly
+  // everything — a full population quietly missing, which is the one answer
+  // this tool must never give by accident.
+  if (!table) throw new Error('familyOf: no read table for language ' + JSON.stringify(lang));
+
   const callee = String(calleeText || '').replace(/\s+/g, '');
   if (!callee) return null;
 
-  const segments = callee.split('.');
-  const tail = segments[segments.length - 1];
-  if (SUPABASE_TAIL.test(tail) &&
-    (segments.some(s => SUPABASE_CHAIN.has(s)) || /supabase/i.test(String(chainHead || ''))))
-    return 'supabase';
-
-  for (let i = 1; i < FAMILIES.length; i++) {
-    const [name, re] = FAMILIES[i];
-    if (re.test(callee)) return name;
+  if (lang === 'js') {
+    const segments = callee.split('.');
+    const tail = segments[segments.length - 1];
+    if (SUPABASE_TAIL.test(tail) &&
+      (segments.some(s => SUPABASE_CHAIN.has(s)) || /supabase/i.test(String(chainHead || ''))))
+      return 'supabase';
   }
+
+  for (const [name, re] of table) if (re.test(callee)) return name;
   return null;
 }
 
@@ -103,6 +151,11 @@ export function familyOf(calleeText, chainHead) {
  * signal — so the signal is what is looked for. This deliberately counts a
  * signal handed in from elsewhere as guarded, even when nothing ever fires it:
  * the tool under-reports rather than accusing a caller it cannot see.
+ *
+ * ONE LIST FOR BOTH LANGUAGES, unlike the read families above. A deadline is
+ * spelled in prose that does not collide across languages — nothing in
+ * JavaScript writes `setReadTimeout(`, nothing in Java writes `AbortSignal` —
+ * and `.timeout(` happens to be the right answer in both.
  */
 const TIMEOUT_MARKERS = [
   ['AbortSignal.timeout', /AbortSignal\.timeout\s*\(/],
@@ -113,6 +166,12 @@ const TIMEOUT_MARKERS = [
   ['Promise.race', /Promise\s*\.\s*race\s*\(/],
   ['withTimeout()', /\b(withTimeout|withDeadline|timeLimited|timeoutAfter|raceTimeout)\s*\(/],
   ['deadline', /\b(deadline|abortAfter|maxWait|maxWaitMs)\b/],
+  // Java. `.timeout(Duration.ofSeconds(5))` on an HttpRequest is already caught
+  // by `.timeout()` above, which is why it is not repeated here.
+  ['connectTimeout()', /\.connectTimeout\s*\(/],
+  ['setConnectTimeout()/setReadTimeout()', /\bset(Connect|Read)Timeout\s*\(/],
+  ['orTimeout()', /\b(orTimeout|completeOnTimeout)\s*\(/],
+  ['TimeUnit', /\bTimeUnit\.\w+/],
 ];
 
 /**
@@ -128,3 +187,18 @@ export function timeoutMarker(statementText) {
 }
 
 export const FAMILY_NAMES = ['supabase', 'net', 'db', 'proc', 'fs', 'parse', 'storage', 'dynamic-import'];
+
+/**
+ * The families each language's table can actually produce, derived from the
+ * tables themselves so that adding a row obliges somebody to add an example.
+ * A row nothing exercises is invisible to every other layer: the family exists,
+ * it is never populated, the population is smaller, fewer findings come out —
+ * and a smaller number reads as cleaner code.
+ */
+export const FAMILY_NAMES_BY_LANG = {
+  js: ['supabase', ...new Set(JS_FAMILIES.map(([name]) => name))],
+  java: [...new Set(JAVA_FAMILIES.map(([name]) => name))],
+};
+
+/** Every marker name, so the vocabulary layer can insist each one has an example. */
+export const TIMEOUT_MARKER_NAMES = TIMEOUT_MARKERS.map(([name]) => name);

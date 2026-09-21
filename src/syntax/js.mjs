@@ -45,6 +45,45 @@ export const isBlock = node => !!node && node.type === 'statement_block';
 
 export const isCall = node => node.type === 'call_expression';
 
+// ------------------------------------------------------------------- values
+//
+// The spellings of an ambiguous answer. What ambiguity MEANS is in values.mjs;
+// this is only how JavaScript writes it.
+export const AMBIGUOUS_LITERALS = new Map([
+  ['[]', '[]'],
+  ['{}', '{}'],
+  ['null', 'null'],
+  ['undefined', 'undefined'],
+  ['0', '0'],
+  ['-0', '0'],
+  ['false', 'false'],
+  ["''", "''"],
+  ['""', "''"],
+  ['``', "''"],
+  ['newMap()', 'new Map()'],
+  ['newSet()', 'new Set()'],
+  ['newMap([])', 'new Map()'],
+  ['newSet([])', 'new Set()'],
+  ['Object.freeze([])', '[]'],
+  ['Object.freeze({})', '{}'],
+]);
+
+export const UNWRAP_TYPES = new Set([
+  'parenthesized_expression', 'as_expression', 'satisfies_expression',
+  'non_null_expression', 'type_assertion', 'await_expression',
+]);
+
+export const OBJECT_LITERAL_TYPE = 'object';
+export const CONSTRUCTION_TYPES = new Set(['array', 'new_expression']);
+
+/** See values.mjs: matching the tail would make `logger.error(...)` a tagged answer. */
+export const OUTCOME_TAIL = false;
+
+export const valueKey = node => normaliseText(node.text);
+
+/** Every JavaScript wrapper puts the value it wraps first. */
+export const unwrapChild = node => node.namedChild(0);
+
 /** `sb.from('x').select('y')` -> `sb.from.select`, with the arguments dropped. */
 export function calleeText(callNode) {
   const f = callNode.childForFieldName('function');

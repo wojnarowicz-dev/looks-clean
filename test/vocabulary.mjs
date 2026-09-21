@@ -18,8 +18,10 @@
 // example it must not. An entry with no example is a failure here, which is the
 // only way to keep a table from quietly growing dead rows.
 import { parserFor } from '../src/parser.mjs';
-import { familyOf, timeoutMarker, FAMILY_NAMES } from '../src/reads.mjs';
+import { familyOf, timeoutMarker, FAMILY_NAMES, FAMILY_NAMES_BY_LANG, TIMEOUT_MARKER_NAMES } from '../src/reads.mjs';
 import { classify, normaliseText } from '../src/values.mjs';
+import * as JS from '../src/syntax/js.mjs';
+import * as JAVA from '../src/syntax/java.mjs';
 
 let failed = 0;
 const check = (name, ok, detail) => {
@@ -83,21 +85,84 @@ const NOT_READS = [
   ['String', 'String', 'a bare constructor'],
 ];
 
+// JAVA, JDK ONLY. The second column is again the documentation: this is the
+// shortest honest answer to "what does looks-clean consider a read in Java".
+const JAVA_FAMILY_EXAMPLES = [
+  ['fs', 'Files.newDirectoryStream', 'Files'],
+  ['fs', 'Files.readString', 'Files'],
+  ['fs', 'Files.readAttributes', 'Files'],
+  ['fs', 'newFileInputStream', 'newFileInputStream'],
+  ['net', 'klient.send', 'klient'],
+  ['net', 'HttpClient.newBuilder.build', 'HttpClient'],
+  ['net', 'url.openStream', 'url'],
+  ['proc', 'process.waitFor', 'process'],
+  ['proc', 'Runtime.getRuntime.exec', 'Runtime'],
+];
+
+// The Java half of "a false read is worse than a missed one". The first two
+// rows are the ones that would have done real damage: `Path.of` is the single
+// commonest call in the tree this table was measured against (211 times inside
+// guarded try blocks alone) and touches no disk, and `Runtime.getRuntime()` is
+// called there only for JVM statistics.
+const JAVA_NOT_READS = [
+  ['Path.of', 'Path', 'path arithmetic, and the commonest call in the material'],
+  ['Path.of.normalize.toAbsolutePath', 'Path', 'still no disk at the end of it'],
+  ['Runtime.getRuntime.maxMemory', 'Runtime', 'a JVM statistic, not an external read'],
+  ['Integer.parseInt', 'Integer', 'a string this program already holds'],
+  ['Instant.parse', 'Instant', 'the same, and why Java has no parse family'],
+  ['newArrayList', 'newArrayList', 'a constructor that opens nothing'],
+  ['list.remove', 'list', 'a collection, not a store'],
+  ['SafeIo.readStringUtf8WithRetry', 'SafeIo', 'a project IO wrapper: deliberately absent, see reads.mjs'],
+  ['logoFile.exists', 'logoFile', 'java.io.File methods are left out, so this under-reports'],
+];
+
 for (const [family, callee, head] of FAMILY_EXAMPLES) {
-  const got = familyOf(callee, head);
-  check('read: ' + callee, got === family, got === family ? family : 'read as ' + got);
+  const got = familyOf(callee, head, 'js');
+  check('js read: ' + callee, got === family, got === family ? family : 'read as ' + got);
 }
 for (const [callee, head, why] of NOT_READS) {
-  const got = familyOf(callee, head);
-  check('not a read: ' + callee, got === null, got === null ? why.slice(0, 46) : 'read as ' + got);
+  const got = familyOf(callee, head, 'js');
+  check('js not a read: ' + callee, got === null, got === null ? why.slice(0, 46) : 'read as ' + got);
+}
+for (const [family, callee, head] of JAVA_FAMILY_EXAMPLES) {
+  const got = familyOf(callee, head, 'java');
+  check('java read: ' + callee, got === family, got === family ? family : 'read as ' + got);
+}
+for (const [callee, head, why] of JAVA_NOT_READS) {
+  const got = familyOf(callee, head, 'java');
+  check('java not a read: ' + callee, got === null, got === null ? why.slice(0, 46) : 'read as ' + got);
 }
 
-// Every family named in the code must be exercised above. A family with no
+// A LANGUAGE MUST NOT READ ANOTHER'S SPELLINGS. Two tables under one function
+// is the arrangement where this goes wrong quietly, so it is pinned.
+check('java spellings are not read as JavaScript',
+  familyOf('Files.readString', 'Files', 'js') === null &&
+  familyOf('process.waitFor', 'process', 'js') === null, '');
+check('javascript spellings are not read as Java',
+  familyOf('fs.readFileSync', 'fs', 'java') === null &&
+  familyOf('sb.from.select', 'sb', 'java') === null &&
+  familyOf('JSON.parse', 'JSON', 'java') === null, '');
+
+// AND NO LANGUAGE BY DEFAULT. A fallback table would read one language through
+// another's spellings and answer "not a read" to nearly everything.
+{
+  let threw = false;
+  try { familyOf('fetch', 'fetch', undefined); } catch { threw = true; }
+  check('an unknown language is refused, not guessed', threw, '');
+}
+
+// Every family each table can produce must be exercised above. A family with no
 // example is a row nothing tests.
-const covered = new Set(FAMILY_EXAMPLES.map(e => e[0]));
-const unexercised = FAMILY_NAMES.filter(f => !covered.has(f));
-check('every family has an example', unexercised.length === 0,
-  unexercised.length ? 'unexercised: ' + unexercised.join(', ') : FAMILY_NAMES.length + ' families');
+for (const [lang, names] of Object.entries(FAMILY_NAMES_BY_LANG)) {
+  const rows = lang === 'js' ? FAMILY_EXAMPLES : JAVA_FAMILY_EXAMPLES;
+  const covered = new Set(rows.map(e => e[0]));
+  const unexercised = names.filter(f => !covered.has(f));
+  check('every ' + lang + ' family has an example', unexercised.length === 0,
+    unexercised.length ? 'unexercised: ' + unexercised.join(', ') : names.length + ' families');
+}
+check('FAMILY_NAMES covers every table', 
+  Object.values(FAMILY_NAMES_BY_LANG).flat().every(f => FAMILY_NAMES.includes(f)),
+  FAMILY_NAMES.length + ' names');
 
 // ---------------------------------------------------------------- 2. deadlines
 //
@@ -114,6 +179,13 @@ const GUARDED = [
   ['const r = await Promise.race([fetch(u), later]);', 'Promise.race'],
   ['const r = await withTimeout(sb.rpc("x"), 5000);', 'withTimeout()'],
   ['const r = await read(u, { deadline: t });', 'deadline'],
+  // Java. The mechanisms are different words for the same promise, and the
+  // report names the one the neighbours already use.
+  ['var c = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();', 'connectTimeout()'],
+  ['conn.setReadTimeout(5000);', 'setConnectTimeout()/setReadTimeout()'],
+  ['var v = future.orTimeout(5, TimeUnit.SECONDS).join();', 'orTimeout()'],
+  ['boolean done = p.waitFor(30, TimeUnit.SECONDS);', 'TimeUnit'],
+  ['var res = client.send(req.timeout(Duration.ofSeconds(3)).build(), h);', '.timeout()'],
 ];
 
 // Statements that must NOT be seen as guarded. `signalHandler` is the one that
@@ -125,11 +197,22 @@ const UNGUARDED = [
   'const r = await sb.rpc("my_reviews");',
   'signalHandler(u);',
   'const timeoutLabel = "no limit";',
+  'String s = Files.readString(Path.of(p));',
+  'var res = client.send(req, HttpResponse.BodyHandlers.ofString());',
+  'int done = p.waitFor();',
 ];
 
 for (const [stmt, marker] of GUARDED) {
   const got = timeoutMarker(stmt);
   check('deadline: ' + marker, got === marker, got === marker ? '' : 'seen as ' + JSON.stringify(got));
+}
+// Same rule as the families: a marker nothing exercises is a row that can stop
+// matching without any layer noticing.
+{
+  const named = new Set(GUARDED.map(g => g[1]));
+  const unexercised = TIMEOUT_MARKER_NAMES.filter(m => !named.has(m));
+  check('every deadline marker has an example', unexercised.length === 0,
+    unexercised.length ? 'unexercised: ' + unexercised.join(', ') : TIMEOUT_MARKER_NAMES.length + ' markers');
 }
 for (const stmt of UNGUARDED) {
   const got = timeoutMarker(stmt);
@@ -138,6 +221,7 @@ for (const stmt of UNGUARDED) {
 
 // ---------------------------------------------------------------- 3. answers
 const parser = await parserFor('vocabulary.ts');
+const javaParser = await parserFor('Vocabulary.java');
 
 /** Parses one expression and hands back its node, the way a rule would see it. */
 function expression(src) {
@@ -145,6 +229,18 @@ function expression(src) {
   let found = null;
   const walk = n => {
     if (!found && n.type === 'variable_declarator') found = n.childForFieldName('value');
+    for (let i = 0; i < n.childCount && !found; i++) walk(n.child(i));
+  };
+  walk(tree.rootNode);
+  return found;
+}
+
+/** The same, in Java. A return is used because Java has no bare expression file. */
+function javaExpression(src) {
+  const tree = javaParser.parse('class V { Object m() { return ' + src + '; } }');
+  let found = null;
+  const walk = n => {
+    if (!found && n.type === 'return_statement') found = n.namedChild(0);
     for (let i = 0; i < n.childCount && !found; i++) walk(n.child(i));
   };
   walk(tree.rootNode);
@@ -190,23 +286,87 @@ const OTHER = [
   'new Error("nope")',
 ];
 
+// THE JAVA HALF. The canonical column is what rule 4 compares across two paths,
+// so `new ArrayList<>()` meeting `new ArrayList<File>()` is that rule working on
+// a language whose type arguments are written on the value.
+const JAVA_AMBIGUOUS = [
+  ['new ArrayList<>()', 'new ArrayList<>()'],
+  ['new ArrayList<File>()', 'new ArrayList<>()'],
+  ['new HashMap<>()', 'new HashMap<>()'],
+  ['new HashSet<>()', 'new HashSet<>()'],
+  ['new LinkedList<>()', 'new LinkedList<>()'],
+  ['Collections.emptyList()', 'Collections.emptyList()'],
+  ['Collections.emptyMap()', 'Collections.emptyMap()'],
+  ['Collections.emptySet()', 'Collections.emptySet()'],
+  ['List.of()', 'List.of()'],
+  ['Map.of()', 'Map.of()'],
+  ['Set.of()', 'Set.of()'],
+  ['Optional.empty()', 'Optional.empty()'],
+  ['null', 'null'],
+  ['false', 'false'],
+  ['0', '0'],
+  ['""', '""'],
+  ['(List<File>) null', 'null'],
+];
+
+const JAVA_TAGGED = [
+  'new ProjectOpResult.Ok(ref)',
+  'ProjectOpResult.failure(msg)',
+  'Result.error(e)',
+];
+
+// `List.of(a, b)` is the row that matters here: the empty call is ambiguous and
+// the same call with contents is not, and only the text tells them apart.
+// `INVALID_PATH_ERROR` is the neighbour that makes B7 a deviation rather than a
+// habit — an answer a caller is forced to read.
+const JAVA_OTHER = [
+  'List.of(a, b)',
+  'new ArrayList<>(other)',
+  'INVALID_PATH_ERROR',
+  'new File(path)',
+  'rows',
+];
+
 for (const [src, canonical] of AMBIGUOUS) {
-  const c = classify(expression(src));
-  check('ambiguous: ' + src, c.kind === 'ambiguous' && c.value === canonical,
+  const c = classify(expression(src), JS);
+  check('js ambiguous: ' + src, c.kind === 'ambiguous' && c.value === canonical,
     c.kind === 'ambiguous' ? 'reduced to ' + c.value : 'classified ' + c.kind);
 }
 for (const src of TAGGED) {
-  const c = classify(expression(src));
-  check('tagged: ' + src.slice(0, 40), c.kind === 'tagged', 'classified ' + c.kind);
+  const c = classify(expression(src), JS);
+  check('js tagged: ' + src.slice(0, 40), c.kind === 'tagged', 'classified ' + c.kind);
 }
 for (const src of OTHER) {
-  const c = classify(expression(src));
-  check('other: ' + src.slice(0, 40), c.kind === 'other', 'classified ' + c.kind);
+  const c = classify(expression(src), JS);
+  check('js other: ' + src.slice(0, 40), c.kind === 'other', 'classified ' + c.kind);
+}
+for (const [src, canonical] of JAVA_AMBIGUOUS) {
+  const c = classify(javaExpression(src), JAVA);
+  check('java ambiguous: ' + src, c.kind === 'ambiguous' && c.value === canonical,
+    c.kind === 'ambiguous' ? 'reduced to ' + c.value : 'classified ' + c.kind);
+}
+for (const src of JAVA_TAGGED) {
+  const c = classify(javaExpression(src), JAVA);
+  check('java tagged: ' + src.slice(0, 40), c.kind === 'tagged', 'classified ' + c.kind);
+}
+for (const src of JAVA_OTHER) {
+  const c = classify(javaExpression(src), JAVA);
+  check('java other: ' + src.slice(0, 40), c.kind === 'other', 'classified ' + c.kind);
+}
+
+// Every ambiguous literal each language lists must be exercised above, for the
+// same reason a family must be: an entry nothing matches shrinks a population
+// without saying so.
+for (const [label, syn, rows] of [['js', JS, AMBIGUOUS], ['java', JAVA, JAVA_AMBIGUOUS]]) {
+  const reached = new Set(rows.map(r => r[1]));
+  const unexercised = [...new Set(syn.AMBIGUOUS_LITERALS.values())].filter(v => !reached.has(v));
+  check('every ' + label + ' ambiguous value has an example', unexercised.length === 0,
+    unexercised.length ? 'unexercised: ' + unexercised.join(', ') : reached.size + ' values');
 }
 
 // A bare `return;` is an answer too, and the ambiguous one.
-check('a bare return is undefined', classify(null).kind === 'ambiguous' &&
-  classify(null).value === 'undefined', '');
+check('a bare return is undefined', classify(null, JS).kind === 'ambiguous' &&
+  classify(null, JS).value === 'undefined', '');
 
 // ---------------------------------------------------------------- 4. normalise
 //

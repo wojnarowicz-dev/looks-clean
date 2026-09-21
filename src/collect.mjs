@@ -221,10 +221,11 @@ export async function readProject(files, root, { includeGenerated = false } = {}
     if (!blocks.length) continue;
     filesRead++;
     const parser = await parserFor('page.ts');
+    const syn = syntaxFor('page.ts');
     for (const b of blocks) {
       htmlBlocks++;
       const tree = parser.parse(b.content);
-      const ir = analyse(tree, rel(f), b.lineOffset);
+      const ir = analyse(tree, rel(f), b.lineOffset, syn);
       if (ir.hasParseError && !parseErrors.includes(rel(f))) parseErrors.push(rel(f));
       all.functions.push(...ir.functions);
       all.handlers.push(...ir.handlers);

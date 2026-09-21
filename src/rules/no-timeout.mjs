@@ -36,7 +36,7 @@ export function run(ir, ctx) {
   const candidates = ir.reads.filter(r => r.family !== 'parse' && r.family !== 'storage');
 
   const { peersOf } = groupPeers(candidates, {
-    keyOf: r => r.family,
+    keyOf: r => r.lang + ' ' + r.family,
     minpop: ctx.minpop,
     mode: ctx.layerMode,
   });

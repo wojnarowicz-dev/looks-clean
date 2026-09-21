@@ -131,7 +131,7 @@ export function run(ir, ctx) {
   for (const f of candidates) f._collision = collision(f, byParent);
 
   const { peersOf } = groupPeers(candidates, {
-    keyOf: f => dominantFamily(f.id),
+    keyOf: f => { const fam = dominantFamily(f.id); return fam === null ? null : f.lang + ' ' + fam; },
     minpop: ctx.minpop,
     mode: ctx.layerMode,
   });
@@ -175,14 +175,14 @@ export function run(ir, ctx) {
       meta: {
         // The same unit key rules 1, 2 and 3 use, so one function breaking two
         // rules is ONE decision in the ranking rather than two lines of noise.
-        unit: fn.name + '@' + peers.disc,
+        unit: fn.name + '@' + dominantFamily(fn.id),
         peers: peers.members.length,
         safe: safe.length,
         odd: odd.length,
         conf: safe.length / peers.members.length,
         layer: peers.name,
         layerKind: peers.kind,
-        family: peers.disc,
+        family: dominantFamily(fn.id),
         value: c.value,
         emptyLine: c.emptyLine,
       },

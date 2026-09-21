@@ -50,7 +50,7 @@ export function run(ir, ctx) {
   const candidates = ir.handlers.filter(h => h.family !== null && (distinguishes(h) || collapses(h)));
 
   const { peersOf } = groupPeers(candidates, {
-    keyOf: h => h.family,
+    keyOf: h => h.lang + ' ' + h.family,
     minpop: ctx.minpop,
     mode: ctx.layerMode,
   });

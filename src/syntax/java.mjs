@@ -56,6 +56,59 @@ export const isCall = node =>
 
 const strip = s => normaliseText(s).replace(/<[^>]*>/g, '').replace(/\([^()]*\)/g, '');
 
+// ------------------------------------------------------------------- values
+//
+// THE KEY DROPS TYPE ARGUMENTS, and that is the whole reason this is a function
+// rather than a plain map lookup. `new ArrayList<>()` and `new ArrayList<File>()`
+// are one answer to a caller and two strings on the page, so rule 4 would see
+// two different answers on the two paths of a function that collapses them into
+// one. Dropping `<...>` can mangle the key of a comparison written without
+// spaces (`a<b&&c>d`), which costs nothing: a mangled key matches no literal and
+// the value is classified as content, which is what it is.
+export const valueKey = node => normaliseText(node.text).replace(/<[^>]*>/g, '');
+
+// `Optional.empty()` is here for the same reason `null` is: it is exactly what a
+// successful lookup of something absent returns, so handing it back from a catch
+// renames the failure rather than reporting it.
+//
+// `-1` is deliberately ABSENT. It is a real Java sentinel for "not found", but it
+// is also a real error code that a caller is forced to read, and the two cannot
+// be told apart from the expression alone.
+export const AMBIGUOUS_LITERALS = new Map([
+  ['null', 'null'],
+  ['false', 'false'],
+  ['0', '0'],
+  ['0L', '0'],
+  ['""', '""'],
+  ['newArrayList()', 'new ArrayList<>()'],
+  ['newHashMap()', 'new HashMap<>()'],
+  ['newHashSet()', 'new HashSet<>()'],
+  ['newLinkedList()', 'new LinkedList<>()'],
+  ['Collections.emptyList()', 'Collections.emptyList()'],
+  ['Collections.emptyMap()', 'Collections.emptyMap()'],
+  ['Collections.emptySet()', 'Collections.emptySet()'],
+  ['List.of()', 'List.of()'],
+  ['Map.of()', 'Map.of()'],
+  ['Set.of()', 'Set.of()'],
+  ['Optional.empty()', 'Optional.empty()'],
+]);
+
+export const UNWRAP_TYPES = new Set(['parenthesized_expression', 'cast_expression']);
+
+/** Java has no object literal, so nothing is tagged by its keys. */
+export const OBJECT_LITERAL_TYPE = null;
+
+export const CONSTRUCTION_TYPES = new Set([
+  'object_creation_expression', 'array_creation_expression',
+]);
+
+/** See values.mjs: `ProjectOpResult.ok(x)` names its outcome in the last segment. */
+export const OUTCOME_TAIL = true;
+
+/** A cast names its type first and its value second; a parenthesis holds only the value. */
+export const unwrapChild = node =>
+  node.childForFieldName('value') || node.namedChild(node.namedChildCount - 1);
+
 function objectText(node) {
   if (node.type === 'method_invocation') return calleeText(node);
   return strip(node.text);
