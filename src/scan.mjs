@@ -171,23 +171,29 @@ diffHeader(w);
 }
 console.log('');
 
-// ONE SITE, ONE ENTRY. A place in the code can break two rules — a handler
+// ONE PLACE, ONE ENTRY. A line in the code can break two rules — a handler
 // that swallows the failure AND answers with a value that already means "no
 // data" is one decision to make, not two — and the reader was being sent to
 // the same line twice, once near the top of the list and once further down.
 //
+// THE KEY IS FILE AND LINE, NOT THE UNIT. Merging by unit — the enclosing
+// function — was tried first and hid something: two findings four lines apart
+// became one entry, and the reader was told "also breaks: swallowed" without
+// being told WHERE. That is a place quietly lost, which is this tool's own
+// subject. A place is a line.
+//
 // THE MERGE IS IN THE LIST AND NOWHERE ELSE. Both findings are true, both stay
 // in the record, and every count on the page above is untouched: the snapshot,
 // the diff, the exit code and the findings count all still count findings.
-// changes is how many places the reader is asked to go and look at.
+// What changes is how many places the reader is asked to go and look at.
 //
-// The first to arrive wins, because toShow is already in the order the
-// reader should read. The rules it absorbs are named beside it rather than
-// dropped — losing them would silently remove a true statement about the site.
+// The first to arrive wins, because toShow is already in the order the reader
+// should read. The rules it absorbs are named beside it rather than dropped —
+// losing them would silently remove a true statement about the line.
 const entries = [];
 const bySite = new Map();
 for (const f of w.toShow) {
-  const key = f.unitId || (f.file + '|' + f.line);
+  const key = f.file + ':' + f.line;
   const first = bySite.get(key);
   if (!first) { const e = { ...f, alsoBreaks: [] }; bySite.set(key, e); entries.push(e); continue; }
   if (!first.alsoBreaks.includes(f.rule)) first.alsoBreaks.push(f.rule);

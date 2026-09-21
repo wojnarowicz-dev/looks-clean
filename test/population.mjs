@@ -184,26 +184,38 @@ try { fs.rmSync(TMP, { recursive: true, force: true }); } catch { /* best effort
 {
   const r = scan(PLANTED);
   const printed = [...r.out.matchAll(/^## \[(\d+)\]\s+(\S+)\s+(\S+)$/gm)]
-    .map(m => ({ n: Number(m[1]), rule: m[2], site: m[3] }));
-  const sites = new Set(r.snap.findings.map(f => f.unitId));
+    .map(m => ({ n: Number(m[1]), rule: m[2], place: m[3] }));
 
-  check('the record still counts findings, not sites',
-    r.snap.findings.length > sites.size,
-    r.snap.findings.length + ' finding(s) on ' + sites.size + ' site(s)');
+  // A PLACE IS A LINE. Merging by the enclosing function was tried first and
+  // hid one: two findings four lines apart became a single entry saying "also
+  // breaks", without saying where the other one was. A reader cannot go and
+  // look at a function; they go and look at a line.
+  const places = new Set(r.snap.findings.map(f => f.file + ':' + f.line));
 
-  check('the list has one entry per site', printed.length === sites.size,
-    printed.length + ' entr(ies) for ' + sites.size + ' site(s)');
+  check('the record still counts findings, not places',
+    r.snap.findings.length > places.size,
+    r.snap.findings.length + ' finding(s) at ' + places.size + ' place(s)');
+
+  check('the list has one entry per place', printed.length === places.size,
+    printed.length + ' entr(ies) for ' + places.size + ' place(s)');
 
   const seen = new Map();
-  for (const p of printed) seen.set(p.site, (seen.get(p.site) || 0) + 1);
+  for (const p of printed) seen.set(p.place, (seen.get(p.place) || 0) + 1);
   const twice = [...seen].filter(([, n]) => n > 1);
   check('no place is printed twice', twice.length === 0,
-    twice.length ? twice.map(([site, n]) => site + ' × ' + n).join(', ')
+    twice.length ? twice.map(([place, n]) => place + ' × ' + n).join(', ')
       : printed.length + ' place(s), each once');
 
+  // AND EVERY LINE THE LIST STILL SHOWS IS A LINE THE RECORD HAS. A merge that
+  // rewrote or dropped a location would pass every count above.
+  const recorded = new Set([...places]);
+  const invented = printed.filter(p => !recorded.has(p.place));
+  check('every entry points at a place the record holds', invented.length === 0,
+    invented.length ? invented[0].place : printed.length + ' checked');
+
   // AND THE SECOND RULE IS NOT LOST IN THE MERGING. Dropping it would satisfy
-  // every line above and quietly remove a true statement about the site.
-  const merged = r.snap.findings.length - sites.size;
+  // every line above and quietly remove a true statement about the line.
+  const merged = r.snap.findings.length - places.size;
   const alsoLines = (r.out.match(/also breaks:/g) || []).length;
   check('a merged entry still names the rule it absorbed', alsoLines === merged,
     alsoLines + ' of ' + merged + ' named');
