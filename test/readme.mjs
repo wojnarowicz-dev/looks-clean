@@ -204,7 +204,16 @@ for (const c of precision.changeChecks || []) {
 // the number the threshold is checked against without anybody editing a total.
 // So the per-rule tallies and the cause tally are both held to the rows.
 for (const smp of precision.languageSamples || []) {
-  for (const [which, part] of [['random', smp.randomSample], ['first', smp.firstSample]]) {
+  // A SAMPLE IS NOT ALWAYS TWO HALVES. Java drew twenty at random and twenty
+  // from the top, because the top of a ranked list is not the middle of it.
+  // Dart reported twenty-two, which is few enough to read all of, so there is
+  // one part and it is the whole. Hard-coding the two halves would have made
+  // the honest record the one the gate could not check.
+  const parts = [['random', smp.randomSample], ['first', smp.firstSample], ['all', smp.sample]]
+    .filter(([, part]) => part);
+  check(smp.language + ': the record carries at least one sample', parts.length > 0,
+    parts.map(p => p[0]).join(', ') || 'none');
+  for (const [which, part] of parts) {
     const tag = smp.language + '/' + which;
     const rows = part.findings;
     const n = v => rows.filter(r => r.verdict === v).length;
@@ -252,10 +261,22 @@ for (const smp of precision.languageSamples || []) {
   // the whole reason the correction is aimed at a rule instead of a dictionary.
   // If a second rule ever starts producing noise, the conclusion has to be
   // rewritten rather than reread.
-  const noisyRules = new Set([...smp.randomSample.findings, ...smp.firstSample.findings]
-    .filter(r => r.verdict === 'noise').map(r => r.rule));
-  check(smp.language + ': the false alarms come from the one rule the record blames',
-    noisyRules.size <= 1, [...noisyRules].join(', ') || 'none');
+  // Java's record says every false alarm came from ONE rule, and that sentence
+  // is why its correction was aimed at a rule rather than a dictionary. Dart's
+  // says the opposite in as many words, so the check is not that there is one
+  // noisy rule but that the record and the rows agree about which rules those
+  // are — a claim about concentration that the rows have stopped supporting is
+  // the edit nobody would notice.
+  const noisyRules = [...new Set(parts.flatMap(([, p]) => p.findings)
+    .filter(r => r.verdict === 'noise').map(r => r.rule))].sort();
+  const blamed = [...new Set(Object.entries(
+    parts.reduce((acc, [, p]) => {
+      for (const [rule, t] of Object.entries(p.perRule)) acc[rule] = (acc[rule] || 0) + t.noise;
+      return acc;
+    }, {})).filter(([, n]) => n > 0).map(([rule]) => rule))].sort();
+  check(smp.language + ': the per-rule tallies name the same noisy rules as the rows',
+    JSON.stringify(noisyRules) === JSON.stringify(blamed),
+    noisyRules.join(', ') || 'none');
 }
 
 // A PAGE THAT NAMES THE LANGUAGES HAS TO NAME THIS SET, and must not deny one
@@ -297,6 +318,8 @@ const earlier = precision.measurements[0];
 // exactly the promise this tool exists to catch: a number that reads clean
 // because of what it left out.
 const javaSample = (precision.languageSamples || []).find(s => s.language === 'java');
+const dartSample = (precision.languageSamples || []).find(s => s.language === 'dart');
+check('a dart sample is recorded', !!dartSample, dartSample ? dartSample.id : 'none');
 check('a java sample is recorded', !!javaSample, javaSample ? javaSample.id : 'none');
 const noisyRules = javaSample
   ? new Set([...javaSample.randomSample.findings, ...javaSample.firstSample.findings]
@@ -337,6 +360,11 @@ const TRUTH = {
   javaFirstDeliberate: javaSample && javaSample.firstSample.deliberate,
   javaFirstNoise: javaSample && javaSample.firstSample.noise,
   javaNoisyRules: noisyRules,
+  dartReported: dartSample && dartSample.reported,
+  dartChecked: dartSample && dartSample.sample.checked,
+  dartReal: dartSample && dartSample.sample.real,
+  dartDeliberate: dartSample && dartSample.sample.deliberate,
+  dartNoise: dartSample && dartSample.sample.noise,
 };
 
 // ---------------------------------------------------------------- 1. claims
@@ -504,10 +532,24 @@ for (const [file, lang] of PAGES) {
 // `test/known-answers.mjs`, where naming the material IS the point, and nowhere
 // else.
 {
-  const PRIVATE = /VideoAnalyzerProWeb|vap-account|vap-site|opinions-vap|i18n-vap|dream_analyzer/;
+  const PRIVATE = /VideoAnalyzerProWeb|vap-account|vap-site|opinions-vap|i18n-vap|dream[_-]analyzer/i;
   for (const [file] of PAGES)
     check(file + ' names no private repository', !PRIVATE.test(text[file]),
       (text[file].match(PRIVATE) || [''])[0]);
+
+  // THE RECORD IS READ BY THE SAME STRANGER. This guard watched the two pages
+  // and not test/precision.json, and the first thing to slip past it was a
+  // sample id naming the product it was measured on — written by the person
+  // who had just finished withholding every location inside it.
+  //
+  // known-answers.mjs is exempt for the reason it always was: naming the
+  // material is what that file is for, and the answers cannot be read without
+  // a repository to read them from.
+  {
+    const record = fs.readFileSync(path.join(HERE, 'precision.json'), 'utf8');
+    const hit = record.match(PRIVATE);
+    check('the precision record names no private repository', !hit, hit ? hit[0] : 'none');
+  }
 }
 
 // ---------------------------------------------------------------- 6. the licence

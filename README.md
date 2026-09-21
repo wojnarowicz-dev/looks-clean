@@ -63,6 +63,11 @@ on this page works the same way with `npx looks-clean` in front of it.
 <!-- lc:claim name=javaFirstDeliberate value=5 -->
 <!-- lc:claim name=javaFirstNoise value=6 -->
 <!-- lc:claim name=javaNoisyRules value=1 -->
+<!-- lc:claim name=dartReported value=22 -->
+<!-- lc:claim name=dartChecked value=22 -->
+<!-- lc:claim name=dartReal value=15 -->
+<!-- lc:claim name=dartDeliberate value=1 -->
+<!-- lc:claim name=dartNoise value=6 -->
 
 ## How this differs from your linter
 
@@ -101,8 +106,9 @@ every bare `catch { return [] }` would be a linter with worse rules.
 
 ## How often it is wrong
 
-Three measurements. Two on six JavaScript projects, none of them mine; a third
-on Java, taken before 0.2.0 shipped. None of them is averaged into another.
+Four measurements. Two on six JavaScript projects, none of them mine; one on
+Java before 0.2.0 shipped, one on Dart before 0.3.0. None of them is averaged
+into another.
 
 The first two, side by side. They are printed side by side
 rather than as one corrected figure, because the tool changed between them and so
@@ -291,7 +297,56 @@ have carried were left out because nothing in the material matched them.
 Twenty checked at random out of eighty-nine is twenty checked. The other 53 are
 unread, and nothing here claims otherwise.
 
-Every verdict in all three measurements was reached by reading the code at the
+### Dart — all twenty-two, not a sample of them
+
+Dart arrived in 0.3.0. It reported twenty-two findings on a 78-file Flutter
+application, which is few enough to read every one — so that is what this is.
+"Twenty-two of twenty-two" is a stronger sentence than "twenty of twenty-two",
+and the threshold for drawing a random sample instead was set at thirty before
+the number was known.
+
+| | all twenty-two |
+|---|---:|
+| **real defects** | **15** |
+| deliberate, and defensible | 1 |
+| **false alarms** | **6** |
+
+**Dart does not repeat Java's pattern, and that is the useful half.** In Java
+every false alarm came from rule 4. Here rule 4 reported nothing at all, and
+five of the six come from rule 1.
+
+| rule | reported | false |
+|---|---:|---:|
+| `swallowed` | 11 | **5** |
+| `default-on-error` | 6 | 1 |
+| `no-timeout` | 5 | **0** |
+| `same-answer` | 0 | — |
+
+Two causes:
+
+* **A trace the vocabulary cannot see.** Five of the six are one handler shape:
+  the error is printed through string interpolation, which this grammar gives
+  its own node type rather than calling it an identifier, and through a print
+  function that is not in the shared list of tracing calls. Either half alone
+  would clear all five. Both are gaps in the vocabulary rather than defects in
+  a rule — the opposite of what Java needed.
+* **A boolean command is not an ambiguous answer.** One is a write whose `false`
+  means "it did not happen", which is what happened. The rule is right about the
+  query in the same file answering `false` both for "not set" and for "could not
+  check"; it is wrong about the command.
+
+`same-answer` reporting nothing is the measurement agreeing with itself: of 105
+catch clauses in this material only fourteen answer with a value at all, so a
+rule about two paths answering the same thing has almost nothing to work with —
+and says nothing rather than reaching.
+
+**These are sites in a closed-source product**: the locations are withheld and
+the verdicts and causes published, exactly as for Java.
+
+Not measured: how the tool behaves on Dart that is not this application. One
+product, one style, one backend — every external read in it is the same kind.
+
+Every verdict in all four measurements was reached by reading the code at the
 cited line. The full record is in `test/precision.json`.
 
 ## What it does not do

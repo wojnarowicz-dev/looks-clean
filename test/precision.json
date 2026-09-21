@@ -1235,6 +1235,212 @@
       ],
       "notMeasured": "Whether the 53 findings outside both samples hold up. Twenty checked at random out of eighty-nine is twenty checked.",
       "locations": "THE VERDICTS ARE PUBLISHED, THE LOCATIONS ARE NOT. Fourteen of the twenty in the random sample are real defects in a product that is sold, and most of them are still unfixed; a file and a line beside each would be a public bug list for somebody else's customers to read. So every site carries a stable identifier J-01..J-34 instead. What a finding was judged, by which rule, and why a false alarm was false is all here and unchanged — the sample can be argued with. Only where it points is withheld.\nThe identifiers are assigned in alphabetical order of the location, so the numbering carries neither the verdict nor the rank, and consecutive ones may share a file. The map from identifier to file and line lives with the product, outside this repository, at docs/looks-clean-sample-map.json in the checkout that answer 7 already names — so anybody holding that checkout can still check every row against the code."
+    },
+    {
+      "id": "2026-09-21-dart-flutter-app",
+      "date": "2026-09-21",
+      "language": "dart",
+      "toolVersion": "0.2.1",
+      "commit": "f954c71",
+      "material": "the lib/ tree of a Flutter application — 78 files, not the author's own code but the author's own product",
+      "run": "scan <that directory>, default layer and minpop, no config and no flags",
+      "reported": 22,
+      "method": "EVERY FINDING, NOT A SAMPLE OF THEM. Twenty-two is few enough to read all of, and \"twenty-two of twenty-two\" is a stronger sentence than \"twenty of twenty-two\". The threshold for drawing a random sample instead was agreed at thirty, before the number was known.",
+      "verdicts": {
+        "real": "a caller or the user can be shown a wrong state because of this site",
+        "deliberate": "the collapse is real and the author chose it, in a comment about the failure itself, and the consequence is confined",
+        "noise": "the tool should not have made this finding — its claim about the site is false"
+      },
+      "sample": {
+        "checked": 22,
+        "real": 15,
+        "deliberate": 1,
+        "noise": 6,
+        "perRule": {
+          "no-timeout": {
+            "checked": 5,
+            "real": 5,
+            "deliberate": 0,
+            "noise": 0
+          },
+          "swallowed": {
+            "checked": 11,
+            "real": 5,
+            "deliberate": 1,
+            "noise": 5
+          },
+          "default-on-error": {
+            "checked": 6,
+            "real": 5,
+            "deliberate": 0,
+            "noise": 1
+          }
+        },
+        "causes": {
+          "a trace the vocabulary cannot see": 5,
+          "a command whose false already means failure": 1
+        },
+        "findings": [
+          {
+            "rank": 1,
+            "ref": "D-21",
+            "rule": "no-timeout",
+            "verdict": "real",
+            "note": "seven of the eight reads of this kind in the same file carry a deadline; this one does not, and a read that never returns never reaches the catch below it"
+          },
+          {
+            "rank": 2,
+            "ref": "D-22",
+            "rule": "swallowed",
+            "verdict": "noise",
+            "cause": "a trace the vocabulary cannot see",
+            "note": "the handler prints the error through string interpolation, which this grammar spells as its own node type, and through a print function the shared trace table does not list"
+          },
+          {
+            "rank": 3,
+            "ref": "D-15",
+            "rule": "no-timeout",
+            "verdict": "real"
+          },
+          {
+            "rank": 4,
+            "ref": "D-16",
+            "rule": "no-timeout",
+            "verdict": "real",
+            "note": "the sibling read eight lines above carries the deadline this one goes without"
+          },
+          {
+            "rank": 5,
+            "ref": "D-17",
+            "rule": "no-timeout",
+            "verdict": "real"
+          },
+          {
+            "rank": 6,
+            "ref": "D-18",
+            "rule": "no-timeout",
+            "verdict": "real"
+          },
+          {
+            "rank": 7,
+            "ref": "D-05",
+            "rule": "default-on-error",
+            "verdict": "real",
+            "note": "one failure is separated out and rethrown; the rest answer with the same empty string a healthy call can return"
+          },
+          {
+            "rank": 8,
+            "ref": "D-07",
+            "rule": "default-on-error",
+            "verdict": "real"
+          },
+          {
+            "rank": 9,
+            "ref": "D-08",
+            "rule": "default-on-error",
+            "verdict": "real"
+          },
+          {
+            "rank": 10,
+            "ref": "D-10",
+            "rule": "default-on-error",
+            "verdict": "real"
+          },
+          {
+            "rank": 11,
+            "ref": "D-12",
+            "rule": "default-on-error",
+            "verdict": "real"
+          },
+          {
+            "rank": 12,
+            "ref": "D-14",
+            "rule": "default-on-error",
+            "verdict": "noise",
+            "cause": "a command whose false already means failure",
+            "note": "this one WRITES. Its false says \"it did not happen\", which is what happened — not an empty result dressed as an answer. The query four hundred lines away is the opposite case and is a real defect"
+          },
+          {
+            "rank": 13,
+            "ref": "D-06",
+            "rule": "swallowed",
+            "verdict": "real"
+          },
+          {
+            "rank": 14,
+            "ref": "D-09",
+            "rule": "swallowed",
+            "verdict": "real"
+          },
+          {
+            "rank": 15,
+            "ref": "D-11",
+            "rule": "swallowed",
+            "verdict": "real",
+            "note": "a query whose false means \"not granted\"; a failed read answers the same false"
+          },
+          {
+            "rank": 16,
+            "ref": "D-13",
+            "rule": "swallowed",
+            "verdict": "real"
+          },
+          {
+            "rank": 17,
+            "ref": "D-01",
+            "rule": "swallowed",
+            "verdict": "noise",
+            "cause": "a trace the vocabulary cannot see"
+          },
+          {
+            "rank": 18,
+            "ref": "D-02",
+            "rule": "swallowed",
+            "verdict": "real",
+            "note": "the comment beside it reasons about the history being optional, not about a failed read arriving as an empty history"
+          },
+          {
+            "rank": 19,
+            "ref": "D-03",
+            "rule": "swallowed",
+            "verdict": "noise",
+            "cause": "a trace the vocabulary cannot see",
+            "note": "it also records the failure in a flag, which the error-shaped-name test does not match either"
+          },
+          {
+            "rank": 20,
+            "ref": "D-04",
+            "rule": "swallowed",
+            "verdict": "deliberate",
+            "note": "the branch above tells the user when the session expired; this one falls back to the cached copy and says so in a comment about the failure itself"
+          },
+          {
+            "rank": 21,
+            "ref": "D-19",
+            "rule": "swallowed",
+            "verdict": "noise",
+            "cause": "a trace the vocabulary cannot see"
+          },
+          {
+            "rank": 22,
+            "ref": "D-20",
+            "rule": "swallowed",
+            "verdict": "noise",
+            "cause": "a trace the vocabulary cannot see"
+          }
+        ]
+      },
+      "threshold": "Agreed before the findings were read: noise above half — more than eleven of twenty-two — stops 0.3.0.",
+      "result": "Noise 6 of 22.",
+      "distinctSites": 22,
+      "doubleCounted": "Twenty-two findings stand on twenty-two distinct lines, but four HANDLERS are reported twice: rule 1 cites the line the catch opens on, rule 2 the line its answer is returned from. That is one site breaking two rules, which the ranking is built to merge and this record counts as the two findings it is.",
+      "whereTheNoiseIs": "DART DOES NOT REPEAT THE JAVA PATTERN, and that is the useful half of this. In Java every false alarm came from rule 4; here rule 4 reported nothing at all, and five of the six false alarms come from rule 1. Rule 3 produced five findings and not one of them is false.",
+      "twoCorrectionsImplied": [
+        "A trace this vocabulary cannot see. Five of the six false alarms are one handler shape: the error is printed through string interpolation, which this grammar gives its own node type rather than calling it an identifier, and through a print function that is not in the shared list of tracing calls. Either half alone would clear all five, and both are vocabulary gaps rather than rule defects — which is the opposite of what Java needed.",
+        "A boolean command is not an ambiguous answer. One false alarm is a write whose false means \"it did not happen\", which is what happened. The rule is right about the query in the same file that answers false for \"not set\" and false for \"could not check\"; it is wrong about the command."
+      ],
+      "notMeasured": "How the tool behaves on Dart that is not this application. One product, one style, one backend — every external read in it is the same kind, so rules 2 and 3 were exercised against a single family and rule 4 against almost nothing.",
+      "locations": "THE VERDICTS ARE PUBLISHED, THE LOCATIONS ARE NOT, for the reason the Java record gives: fifteen of these are real defects in a product that is sold. Each site carries a stable identifier D-01..D-22, assigned in alphabetical order of the location so the numbering carries neither verdict nor rank. The map back to file and line lives with the product, outside this repository."
     }
   ]
 }

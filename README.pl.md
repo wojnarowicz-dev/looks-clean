@@ -64,6 +64,11 @@ z przodu.
 <!-- lc:claim name=javaFirstDeliberate value=5 -->
 <!-- lc:claim name=javaFirstNoise value=6 -->
 <!-- lc:claim name=javaNoisyRules value=1 -->
+<!-- lc:claim name=dartReported value=22 -->
+<!-- lc:claim name=dartChecked value=22 -->
+<!-- lc:claim name=dartReal value=15 -->
+<!-- lc:claim name=dartDeliberate value=1 -->
+<!-- lc:claim name=dartNoise value=6 -->
 
 ## Czym to się różni od twojego lintera
 
@@ -103,8 +108,9 @@ regułami.
 
 ## Jak często się myli
 
-Trzy pomiary. Dwa na sześciu projektach w JavaScripcie, żaden nie jest mój;
-trzeci na Javie, zrobiony zanim wyszło 0.2.0. Żaden nie jest uśredniony w inny.
+Cztery pomiary. Dwa na sześciu projektach w JavaScripcie, żaden nie jest mój;
+jeden na Javie przed 0.2.0, jeden na Darcie przed 0.3.0. Żaden nie jest
+uśredniony w inny.
 
 Pierwsze dwa, obok siebie. Stoją obok siebie, a nie jako
 jedna poprawiona liczba, bo między nimi zmieniło się narzędzie i zmienił się
@@ -294,7 +300,56 @@ pisana z pamięci by niosła, wypadły, bo nic w materiale do nich nie pasowało
 Dwadzieścia sprawdzonych losowo z osiemdziesięciu dziewięciu to dwadzieścia
 sprawdzonych. Pozostałych 53 nikt nie przeczytał i nic tu nie twierdzi inaczej.
 
-Każdy werdykt we wszystkich trzech pomiarach zapadł po przeczytaniu kodu w
+### Dart — wszystkie dwadzieścia dwa, nie próbka
+
+Dart wszedł w 0.3.0. Zgłosił dwadzieścia dwa miejsca na 78-plikowej aplikacji
+Flutter — na tyle mało, że dało się przeczytać każde. „Dwadzieścia dwa z
+dwudziestu dwóch" to mocniejsze zdanie niż „dwadzieścia z dwudziestu dwóch",
+a próg losowania próbki ustalono na trzydzieści, zanim liczba była znana.
+
+| | wszystkie 22 |
+|---|---:|
+| **prawdziwe usterki** | **15** |
+| celowe i do obrony | 1 |
+| **fałszywe alarmy** | **6** |
+
+**Dart nie powtarza wzorca Javy i to jest użyteczna połowa tego pomiaru.**
+W Javie każdy fałszywy alarm pochodził z reguły 4. Tutaj reguła 4 nie zgłosiła
+nic, a pięć z sześciu pochodzi z reguły 1.
+
+| reguła | zgłoszeń | fałszywych |
+|---|---:|---:|
+| `swallowed` | 11 | **5** |
+| `default-on-error` | 6 | 1 |
+| `no-timeout` | 5 | **0** |
+| `same-answer` | 0 | — |
+
+Dwie przyczyny:
+
+* **Ślad, którego słownik nie widzi.** Pięć z sześciu to jeden kształt obsługi:
+  błąd trafia do logu przez interpolację w napisie, której ta gramatyka nadaje
+  własny typ węzła zamiast nazwać identyfikatorem, i przez funkcję wypisującą,
+  której nie ma we wspólnej liście wywołań zostawiających ślad. Każda z tych
+  połówek osobno wyczyściłaby całą piątkę. Obie są lukami w słowniku, nie
+  usterkami reguły — odwrotnie niż w Javie.
+* **Komenda logiczna to nie jest dwuznaczna odpowiedź.** Jeden przypadek to
+  zapis, którego `false` znaczy „nie wykonało się" — czyli to, co się stało.
+  Reguła ma rację co do zapytania w tym samym pliku, które odpowiada `false`
+  i na „nie ustawiono", i na „nie dało się sprawdzić"; nie ma racji co do komendy.
+
+`same-answer` nie zgłaszająca nic to pomiar zgadzający się sam ze sobą: ze 105
+klauzul `catch` w tym materiale tylko czternaście odpowiada w ogóle wartością,
+więc reguła o dwóch ścieżkach dających tę samą odpowiedź nie ma z czym
+pracować — i milczy, zamiast sięgać.
+
+**To są miejsca w programie o zamkniętym źródle**: lokalizacje zatrzymane,
+werdykty i przyczyny opublikowane, dokładnie jak przy Javie.
+
+Niezmierzone: jak narzędzie zachowuje się na Darcie spoza tej aplikacji. Jeden
+produkt, jeden styl, jeden backend — każdy odczyt zewnętrzny w nim jest tego
+samego rodzaju.
+
+Każdy werdykt we wszystkich czterech pomiarach zapadł po przeczytaniu kodu w
 cytowanej linii. Pełny zapis leży w `test/precision.json`.
 
 ## Czego NIE robi
