@@ -17,7 +17,7 @@ import { parserFor, syntaxFor } from './parser.mjs';
 import { tryReadSource } from './input.mjs';
 import { analyse } from './ir.mjs';
 
-const SCRIPT_EXT = /\.(js|mjs|cjs|jsx|ts|mts|cts|tsx|java)$/i;
+const SCRIPT_EXT = /\.(js|mjs|cjs|jsx|ts|mts|cts|tsx|java|dart)$/i;
 const HTML_EXT = /\.html?$/i;
 
 // HOW MUCH WAS NOT READ, AND UNDER WHICH RULE.

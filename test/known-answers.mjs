@@ -212,7 +212,7 @@ const ANSWERS = [
     // result.
     state: 'SKIP',
     material: () => ({
-      skip: 'the checker is SQL tooling, and this build reads .js/.ts/.java — ' +
+      skip: 'the checker is SQL tooling, and this build reads .js/.ts/.java/.dart — ' +
         'out of language scope, not missing',
     }),
   },
