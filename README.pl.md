@@ -3,7 +3,7 @@
 [![tests](https://github.com/wojnarowicz-dev/looks-clean/actions/workflows/ci.yml/badge.svg)](https://github.com/wojnarowicz-dev/looks-clean/actions/workflows/ci.yml)
 [![znane odpowiedzi: 5 z 7 wymaga prywatnego materialu](https://img.shields.io/badge/znane%20odpowiedzi-5%20z%207%20wymaga%20prywatnego%20materialu-yellow)](test/known-answers.mjs)
 
-> Zielona odznaka obejmuje dziesięć warstw testowych. **Nie** obejmuje pięciu
+> Zielona odznaka obejmuje jedenaście warstw testowych. **Nie** obejmuje pięciu
 > z siedmiu znanych odpowiedzi: wymagają repozytoriów, które nie są publiczne,
 > więc CI zgłasza je jako nieosiągalne, a nie jako zaliczone. Druga odznaka o tym
 > mówi, a `test/readme.mjs` sprawdza, czy jej liczba to liczba, którą podaje zestaw.
@@ -33,7 +33,7 @@ z przodu.
 
 <!-- lc:claim name=rules value=4 -->
 <!-- lc:claim name=rulesNeedingPopulation value=3 -->
-<!-- lc:claim name=layers value=10 -->
+<!-- lc:claim name=layers value=11 -->
 <!-- lc:claim name=knownAnswers value=7 -->
 <!-- lc:claim name=knownAnswersInScope value=6 -->
 <!-- lc:claim name=families value=9 -->
@@ -610,7 +610,7 @@ Dwa dalsze powody, wagą:
 Reszta po pomiarze — to ta sama dyscyplina, której narzędzie wymaga od
 czytelnika.
 
-## Dziesięć warstw testowych
+## Jedenaście warstw testowych
 
     $ npm test
 
@@ -633,9 +633,26 @@ sukcesem.
 | 8 | `npm run resilience` | pada głośno, nigdy po cichu |
 | 9 | `npm run readme` | że ta strona zgadza się z narzędziem i co wysłałby `npm pack` |
 | 10 | `npm run known-answers` | sześć prześledzonych ręcznie usterek, jako kontrakt |
+| 11 | `npm run packaged` | że PACZKA jest tym samym programem co klon |
 
 Każda warstwa ma sprawdzenie negatywne: została celowo zepsuta, pokazano, że
 pada, i cofnięto. Test, którego nie da się zmusić do porażki, nie jest testem.
+
+Warstwa 11 jest tą, której brakowało przez cztery wydania. Pozostałych dziesięć uruchamia
+klon, a klon zawsze ma każdy plik, po który sięga kod — więc `files` w
+`package.json` mogło zgubić coś, czego kod potrzebuje w czasie działania, i
+żadna warstwa by tego nie zauważyła. Ta pakuje repozytorium, instaluje tarball
+i skanuje jedną fiksturę dwa razy: raz klonem, raz zainstalowaną paczką. Oba
+przebiegi muszą się zgadzać co do każdego zgłoszenia i co do każdego licznika.
+Jej sprawdzenie negatywne to usunięcie `vendor/` z `files`:
+
+    FAIL  the carried grammar shipped      MISSING from the package
+    FAIL  the package scans the fixture    wrote no snapshot (exit 1)
+
+Zgłoszenia dartowe są dodatkowo sprawdzane **z nazwy**, bo utrata gramatyki nie
+podnosi żadnego błędu: plik, którego nie da się sparsować, nie wnosi nic, a
+narzędzie zgłasza czyste drzewo. Dwa przebiegi zgodne co do niczego przeszłyby
+zwykłe porównanie.
 
 ### Trzy usterki, które te warstwy znalazły we własnym kodzie narzędzia
 

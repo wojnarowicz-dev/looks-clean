@@ -40,6 +40,11 @@ const LAYERS = [
   ['resilience', 'fail loudly, never quietly'],
   ['readme', 'the README agrees with the tool'],
   ['known-answers', 'the seven hand-traced defects'],
+  // LAST, AND IT REACHES FURTHEST OUT. It packs the repository, installs the
+  // tarball and runs the tool the way a reader receives it, which needs the
+  // three dependencies and so the network or a warm cache. It skips loudly
+  // when it cannot, rather than passing quietly.
+  ['packaged', 'the tool as the reader receives it'],
 ];
 
 const missing = LAYERS.filter(([n]) => !fs.existsSync(path.join(HERE, n + '.mjs')));

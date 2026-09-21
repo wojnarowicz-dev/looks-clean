@@ -41,7 +41,8 @@
     "evidence": "node test/evidence.mjs",
     "resilience": "node test/resilience.mjs",
     "known-answers": "node test/known-answers.mjs",
-    "readme": "node test/readme.mjs"
+    "readme": "node test/readme.mjs",
+    "packaged": "node test/packaged.mjs"
   },
   "keywords": [
     "static-analysis",
