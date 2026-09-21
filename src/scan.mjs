@@ -171,9 +171,31 @@ diffHeader(w);
 }
 console.log('');
 
-for (const [i, f] of w.toShow.slice(0, TOP).entries()) print(f, i + 1);
+// ONE SITE, ONE ENTRY. A place in the code can break two rules — a handler
+// that swallows the failure AND answers with a value that already means "no
+// data" is one decision to make, not two — and the reader was being sent to
+// the same line twice, once near the top of the list and once further down.
+//
+// THE MERGE IS IN THE LIST AND NOWHERE ELSE. Both findings are true, both stay
+// in the record, and every count on the page above is untouched: the snapshot,
+// the diff, the exit code and the findings count all still count findings.
+// changes is how many places the reader is asked to go and look at.
+//
+// The first to arrive wins, because toShow is already in the order the
+// reader should read. The rules it absorbs are named beside it rather than
+// dropped — losing them would silently remove a true statement about the site.
+const entries = [];
+const bySite = new Map();
+for (const f of w.toShow) {
+  const key = f.unitId || (f.file + '|' + f.line);
+  const first = bySite.get(key);
+  if (!first) { const e = { ...f, alsoBreaks: [] }; bySite.set(key, e); entries.push(e); continue; }
+  if (!first.alsoBreaks.includes(f.rule)) first.alsoBreaks.push(f.rule);
+}
 
-if (w.toShow.length > TOP) console.log(t('moreFindings', w.toShow.length - TOP));
+for (const [i, f] of entries.slice(0, TOP).entries()) print(f, i + 1);
+
+if (entries.length > TOP) console.log(t('moreFindings', entries.length - TOP));
 
 if (VERBOSE && skipped.length) {
   console.log('');
@@ -206,6 +228,7 @@ function print(f, n) {
   console.log('## [' + n + '] ' + f.rule + '   ' + f.file + ':' + f.line);
   console.log('');
   console.log('     ' + f.label);
+  if (f.alsoBreaks && f.alsoBreaks.length) console.log(t('rankAlsoBreaks', f.alsoBreaks.join(', ')));
   console.log('');
 
   console.log(t('secDeviation'));

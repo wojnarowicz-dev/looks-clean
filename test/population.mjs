@@ -164,6 +164,51 @@ check('nothing is both reported and passed over', both.length === 0,
 
 try { fs.rmSync(TMP, { recursive: true, force: true }); } catch { /* best effort */ }
 
+// ---------------------------------------------------------------- one site, one entry
+//
+// A SITE IS NOT A FINDING, AND THE LIST IS ABOUT SITES. One place in the code
+// can break two rules — a handler that swallows the failure AND answers with a
+// value that already means "no data" is one decision to make, not two. The
+// findings are both real and both stay in the record; what must not happen is
+// the reader being sent to the same line twice, once near the top of the list
+// and once further down, as if there were two things to go and look at.
+//
+// The README has promised this since before Java: "the ranking merges them
+// into one decision rather than two lines of noise". It did not. Measured on
+// the Java material: 83 findings, 19 units carrying more than one rule, and
+// SEVEN pairs printed under the same file and line.
+//
+// This counts both numbers, because only one of them is allowed to change. The
+// findings are the record and must stay as they are; the entries are the list
+// and must be one per site.
+{
+  const r = scan(PLANTED);
+  const printed = [...r.out.matchAll(/^## \[(\d+)\]\s+(\S+)\s+(\S+)$/gm)]
+    .map(m => ({ n: Number(m[1]), rule: m[2], site: m[3] }));
+  const sites = new Set(r.snap.findings.map(f => f.unitId));
+
+  check('the record still counts findings, not sites',
+    r.snap.findings.length > sites.size,
+    r.snap.findings.length + ' finding(s) on ' + sites.size + ' site(s)');
+
+  check('the list has one entry per site', printed.length === sites.size,
+    printed.length + ' entr(ies) for ' + sites.size + ' site(s)');
+
+  const seen = new Map();
+  for (const p of printed) seen.set(p.site, (seen.get(p.site) || 0) + 1);
+  const twice = [...seen].filter(([, n]) => n > 1);
+  check('no place is printed twice', twice.length === 0,
+    twice.length ? twice.map(([site, n]) => site + ' × ' + n).join(', ')
+      : printed.length + ' place(s), each once');
+
+  // AND THE SECOND RULE IS NOT LOST IN THE MERGING. Dropping it would satisfy
+  // every line above and quietly remove a true statement about the site.
+  const merged = r.snap.findings.length - sites.size;
+  const alsoLines = (r.out.match(/also breaks:/g) || []).length;
+  check('a merged entry still names the rule it absorbed', alsoLines === merged,
+    alsoLines + ' of ' + merged + ' named');
+}
+
 console.log('\n  ' + (failed ? failed + ' failed' : 'every finding\'s arithmetic holds'));
 if (failed) {
   console.log('\n  A finding quotes a group as its evidence. If the group is not real, the');
