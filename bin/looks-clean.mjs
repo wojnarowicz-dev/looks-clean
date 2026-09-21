@@ -18,7 +18,13 @@ const mod = f => new URL('file://' + path.join(SRC, f).replace(/\\/g, '/')).href
 const COMMANDS = {
   scan: {
     module: 'scan.mjs',
-    arg: '<js-or-ts-dir>',
+    // A PLACEHOLDER THAT NAMES LANGUAGES GOES STALE THE DAY ONE IS ADDED, and
+    // did: this one still said js-or-ts after 0.2.0 shipped reading Java, one
+    // line above a description that named all three. Nothing compares the two,
+    // so the page contradicted itself and every gate stayed green. The list of
+    // languages is stated once, in the description below, where it is already
+    // kept; the argument is just a directory.
+    arg: '<dir>',
     descKey: 'cmdScan',
     options: '--rule ' + RULE_IDS.join(',') + '  --layer file|dir|root  --minpop 3  --top 15  --verbose  --json <file>  --all',
   },
