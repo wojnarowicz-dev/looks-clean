@@ -23,7 +23,19 @@
 // not check" and "checked and fine" must not look alike — and if that rule is
 // going to be enforced on other people's code it is enforced here first.
 //
-// MATERIAL. Three answers live in repositories that are not part of this one.
+// MATERIAL. Four answers live in repositories that are not part of this one,
+// and EVERY ONE OF THEM IS READ AT A FIXED REVISION rather than out of a
+// working tree. That was not true of answers 1 and 5 until it cost a red suite:
+// somebody was editing odd-one-out in another window, thirty lines went into
+// the very file these two pin, and the swallowed catches they name moved from
+// lines 46 and 77 to 50 and 98. Nothing was wrong with this tool, and the
+// contract said two of its known answers had been lost.
+//
+// A known answer that changes meaning when a sibling repository is edited is
+// not a contract, it is a reading of whatever happens to be on disk. Answers 2
+// and 7 were already archived at a revision; these two now are as well, and the
+// checkout is needed only as somewhere to read that revision FROM.
+//
 // Paths default to siblings of this repository and are overridable:
 //     LC_ODD   an odd-one-out checkout          (answers 1 and 5)
 //     LC_WEB   a VideoAnalyzerProWeb checkout   (answer 2)
@@ -94,10 +106,29 @@ const once = (key, fn) => {
   return memo.get(key);
 };
 
+// 6f4cdd6 is "Publikacja na npm: paczka bez testow i sekcja npx na poczatku
+// README" — the revision these two answers were last verified against, and the
+// one they are read at from now on. Its test/known-answers.mjs holds the
+// swallowed catch at line 77 and the null-findings read at line 46.
+const ODD_REV = '6f4cdd6';
+
 const oddOneOutTests = () => once('odd', () => {
-  const dir = path.join(ODD, 'test');
-  if (!exists(dir)) return { skip: 'no checkout at ' + ODD + ' — set LC_ODD' };
-  return { dir };
+  if (!exists(ODD)) return { skip: 'no checkout at ' + ODD + ' — set LC_ODD' };
+  const out = path.join(TMP, 'odd-at-rev');
+  try {
+    fs.mkdirSync(out, { recursive: true });
+    const tar = execFileSync('git', ['archive', ODD_REV, 'test'], { cwd: ODD, maxBuffer: 5e8 });
+    // Relative name, from inside `out`, for the reason answer 2 gives below.
+    fs.writeFileSync(path.join(out, 'odd.tar'), tar);
+    execFileSync('tar', ['-xf', 'odd.tar'], { cwd: out, stdio: 'ignore' });
+    fs.rmSync(path.join(out, 'odd.tar'), { force: true });
+    const dir = path.join(out, 'test');
+    if (!exists(dir)) return { skip: 'extracted ' + ODD_REV + ' but no test/ inside it' };
+    return { dir };
+  } catch (e) {
+    return { skip: 'extracting ' + ODD_REV + ' failed — ' +
+      String(e.message).replace(/[\r\n]+/g, ' ').slice(0, 120) };
+  }
 });
 
 // The material for answer 2 is the revision BEFORE the fix. 44db12c is
@@ -165,7 +196,7 @@ const ANSWERS = [
   {
     id: 1,
     name: 'swallowed catch read as "material unavailable"',
-    source: 'odd-one-out — test/known-answers.mjs:77',
+    source: 'odd-one-out — test/known-answers.mjs:77 at 6f4cdd6',
     cost: 'a fixture that would not extract reported itself as missing material, ' +
       'and the suite went green on a check that never ran',
     state: 'LIVE',
@@ -220,7 +251,7 @@ const ANSWERS = [
   {
     id: 5,
     name: 'a test that passed with nothing to check',
-    source: 'odd-one-out — test/known-answers.mjs:46',
+    source: 'odd-one-out — test/known-answers.mjs:46 at 6f4cdd6',
     cost: 'the snapshot read failed, the findings list stayed null, and every ' +
       'assertion below reported "not found" instead of "nothing ran"',
     state: 'LIVE',
