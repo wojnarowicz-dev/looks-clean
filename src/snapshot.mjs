@@ -86,6 +86,12 @@ export function buildSnapshot({ detector, root, args, counts, findings, cfg }) {
 
   return {
     mutedCount,
+    // COMMENT MUTES ARE COUNTED LATER, AND THE RECORD SAYS SO ANYWAY. They
+    // cannot be applied here, because a mute is a comment on a line and the
+    // line is only known once the finding exists. Declared here regardless,
+    // so the written key order does not depend on how far a run got, and
+    // filled in by runSnapshot below.
+    mutedByCommentCount: 0,
     version: SNAPSHOT_VERSION,
     tool: 'looks-clean',
     detector,
@@ -279,6 +285,19 @@ export function prepare(argv, payload) {
       console.error(t('snapshotUnreadableHint'));
     }
   }
+
+  // THE RUN PRINTED THIS NUMBER AND DID NOT RECORD IT. `muted by comment: 7`
+  // went to the terminal and nowhere else, so the snapshot — which is the
+  // record of the run — could not account for findings that had been removed
+  // from it. Anything checking the number had to read the printout and was
+  // therefore tied to the wording of a message rather than to the run.
+  //
+  // SNAPSHOT_VERSION IS NOT BUMPED. readSnapshot refuses a version it does
+  // not know, so a bump would make every baseline on every user's disk
+  // unreadable and turn their next diff into a full re-report. An added field
+  // costs a reader of an older snapshot an `undefined`, which is what its
+  // absence means; a bump costs them their history.
+  snap.mutedByCommentCount = mutedByCommentList.length;
 
   const diff = previous ? diffSnapshots(previous, snap) : null;
   const toShow = (!diff || showAll) ? snap.findings : [...diff.added, ...diff.changed];

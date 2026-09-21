@@ -93,13 +93,13 @@ function selfScan() {
   if (!fs.existsSync(snap)) throw new Error('self-scan wrote nothing (exit ' + r.status + ')');
   const run = JSON.parse(fs.readFileSync(snap, 'utf8'));
   try { fs.rmSync(snap, { force: true }); } catch { /* leaves no harm */ }
-  // THE MUTE COUNT COMES FROM THE OUTPUT, NOT THE SNAPSHOT, because the
-  // snapshot does not carry it: `mutedCount` there counts mutes from the
-  // config file, and comment mutes are applied afterwards, when the line is
-  // known. So the tool prints a number it does not record. Read from stdout
-  // here, which is the number the page quotes, and noted in the tracker.
-  const m = String(r.stdout || '').match(/muted by comment: (\d+)/);
-  return { findings: run.findings.length, muted: m ? Number(m[1]) : 0 };
+  // FROM THE RECORD, NOT FROM THE PRINTOUT. This read stdout until 0.5.0,
+  // because the snapshot did not carry the number: `mutedCount` counts mutes
+  // from the config file, and comment mutes are applied afterwards, once the
+  // line is known. A number the tool printed and did not record tied this
+  // check to the wording of a sentence — rename the message and the gate
+  // reads zero and says the page is right.
+  return { findings: run.findings.length, muted: run.mutedByCommentCount };
 }
 const self = selfScan();
 

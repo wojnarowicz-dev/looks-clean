@@ -1,5 +1,6 @@
 {
   "mutedCount": 0,
+  "mutedByCommentCount": 0,
   "version": 1,
   "tool": "looks-clean",
   "detector": "scan",
