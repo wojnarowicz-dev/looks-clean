@@ -3,7 +3,7 @@
 [![tests](https://github.com/wojnarowicz-dev/looks-clean/actions/workflows/ci.yml/badge.svg)](https://github.com/wojnarowicz-dev/looks-clean/actions/workflows/ci.yml)
 [![znane odpowiedzi: 5 z 7 wymaga prywatnego materialu](https://img.shields.io/badge/znane%20odpowiedzi-5%20z%207%20wymaga%20prywatnego%20materialu-yellow)](test/known-answers.mjs)
 
-> Zielona odznaka obejmuje jedenaście warstw testowych. **Nie** obejmuje pięciu
+> Zielona odznaka obejmuje dwanaście warstw testowych. **Nie** obejmuje pięciu
 > z siedmiu znanych odpowiedzi: wymagają repozytoriów, które nie są publiczne,
 > więc CI zgłasza je jako nieosiągalne, a nie jako zaliczone. Druga odznaka o tym
 > mówi, a `test/readme.mjs` sprawdza, czy jej liczba to liczba, którą podaje zestaw.
@@ -44,7 +44,7 @@ Reszta:
   ogóle tam działa. Na każdym mierzonym projekcie dartowym zgłaszała zero.
 * `looks-clean diff` odpowiada zdaniem zamiast śladem stosu, gdy migawka ma
   znacznik czasu, którego nie da się odczytać.
-* Jedenasta warstwa testowa uruchamia narzędzie **z paczki**, a nie z klonu.
+* Nowa warstwa testowa uruchamia narzędzie **z paczki**, a nie z klonu.
 
 ## Uruchomienie bez instalowania
 
@@ -59,7 +59,7 @@ z przodu.
 
 <!-- lc:claim name=rules value=4 -->
 <!-- lc:claim name=rulesNeedingPopulation value=3 -->
-<!-- lc:claim name=layers value=11 -->
+<!-- lc:claim name=layers value=12 -->
 <!-- lc:claim name=knownAnswers value=7 -->
 <!-- lc:claim name=knownAnswersInScope value=6 -->
 <!-- lc:claim name=families value=9 -->
@@ -670,7 +670,7 @@ sprawdza `summary.unreachable` świadomie. `explained` i `notApplicable` nigdy
 nie wpływają na kod wyjścia — wyciszenie z wypisanym powodem i plik generowany
 to odpowiedzi, nie praca do wykonania.
 
-## Jedenaście warstw testowych
+## Dwanaście warstw testowych
 
     $ npm test
 
@@ -685,20 +685,21 @@ sukcesem.
 |---|---|---|
 | 1 | `npm run vocabulary` | tabele, przez które reguły patrzą — wpis, który niczego nie dopasowuje, jest niewidoczny dla każdej innej warstwy |
 | 2 | `npm run lang-check` | oba języki kompletne i żadne zdanie omijające słownik |
-| 3 | `npm run negative` | kod, którego NIE wolno zgłosić, z kontrolami, które nadal muszą się odpalać |
-| 4 | `npm run golden` | nagrane przebiegi, pole po polu, razem z odciskami |
-| 5 | `npm run amplify` | że wyjście w ogóle zależy od wejścia |
-| 6 | `npm run population` | że arytmetyka każdego zgłoszenia opisuje prawdziwą grupę |
-| 7 | `npm run evidence` | że każdy zacytowany sąsiad istnieje i robi to, co zgłoszenie mówi |
-| 8 | `npm run resilience` | pada głośno, nigdy po cichu |
-| 9 | `npm run readme` | że ta strona zgadza się z narzędziem i co wysłałby `npm pack` |
-| 10 | `npm run known-answers` | sześć prześledzonych ręcznie usterek, jako kontrakt |
-| 11 | `npm run packaged` | że PACZKA jest tym samym programem co klon |
+| 3 | `npm run scope` | każde zdanie o tym, co to narzędzie czyta, wobec `src/languages.mjs` — kod jest faktem, zdanie twierdzeniem |
+| 4 | `npm run negative` | kod, którego NIE wolno zgłosić, z kontrolami, które nadal muszą się odpalać |
+| 5 | `npm run golden` | nagrane przebiegi, pole po polu, razem z odciskami |
+| 6 | `npm run amplify` | że wyjście w ogóle zależy od wejścia |
+| 7 | `npm run population` | że arytmetyka każdego zgłoszenia opisuje prawdziwą grupę |
+| 8 | `npm run evidence` | że każdy zacytowany sąsiad istnieje i robi to, co zgłoszenie mówi |
+| 9 | `npm run resilience` | pada głośno, nigdy po cichu |
+| 10 | `npm run readme` | że ta strona zgadza się z narzędziem i co wysłałby `npm pack` |
+| 11 | `npm run known-answers` | sześć prześledzonych ręcznie usterek, jako kontrakt |
+| 12 | `npm run packaged` | że PACZKA jest tym samym programem co klon |
 
 Każda warstwa ma sprawdzenie negatywne: została celowo zepsuta, pokazano, że
 pada, i cofnięto. Test, którego nie da się zmusić do porażki, nie jest testem.
 
-Warstwa 11 jest tą, której brakowało przez cztery wydania. Pozostałych dziesięć uruchamia
+Warstwa 12 jest tą, której brakowało przez cztery wydania. Pozostałych jedenaście uruchamia
 klon, a klon zawsze ma każdy plik, po który sięga kod — więc `files` w
 `package.json` mogło zgubić coś, czego kod potrzebuje w czasie działania, i
 żadna warstwa by tego nie zauważyła. Ta pakuje repozytorium, instaluje tarball

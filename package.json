@@ -33,6 +33,7 @@
     "test": "node test/all.mjs",
     "vocabulary": "node test/vocabulary.mjs",
     "lang-check": "node test/lang-check.mjs",
+    "scope": "node test/scope.mjs",
     "negative": "node test/negative.mjs",
     "golden": "node test/golden.mjs",
     "golden:update": "node test/golden.mjs --update",

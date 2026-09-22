@@ -3,7 +3,7 @@
 [![tests](https://github.com/wojnarowicz-dev/looks-clean/actions/workflows/ci.yml/badge.svg)](https://github.com/wojnarowicz-dev/looks-clean/actions/workflows/ci.yml)
 [![known answers: 5 of 7 need private material](https://img.shields.io/badge/known%20answers-5%20of%207%20need%20private%20material-yellow)](test/known-answers.mjs)
 
-> The green badge covers the eleven test layers. It does **not** cover five of the
+> The green badge covers the twelve test layers. It does **not** cover five of the
 > seven known answers: they need repositories that are not public, so CI reports
 > them as unreachable rather than as passing. The second badge says so, and
 > `test/readme.mjs` checks that its number is the number the suite reports.
@@ -44,7 +44,7 @@ Everything else:
   measured.
 * `looks-clean diff` answers with a sentence instead of a stack trace when a
   snapshot carries a timestamp it cannot read.
-* An eleventh test layer runs the tool **from the package** rather than from the
+* A new test layer runs the tool **from the package** rather than from the
   clone.
 
 ## Run it without installing
@@ -59,7 +59,7 @@ on this page works the same way with `npx looks-clean` in front of it.
 
 <!-- lc:claim name=rules value=4 -->
 <!-- lc:claim name=rulesNeedingPopulation value=3 -->
-<!-- lc:claim name=layers value=11 -->
+<!-- lc:claim name=layers value=12 -->
 <!-- lc:claim name=knownAnswers value=7 -->
 <!-- lc:claim name=knownAnswersInScope value=6 -->
 <!-- lc:claim name=families value=9 -->
@@ -617,6 +617,8 @@ answer, in Java, was added with 0.2.0.
 
 Two further reasons, in order of weight:
 
+<!-- lc:scope-ok reason="compares rule 3 in two languages; promises no scope" -->
+
 * Rule 3 needs a population of reads that *mix* guarded and unguarded. In async
   JavaScript that population is dense and the mechanisms are recognisable:
   `AbortSignal.timeout`, an `AbortController` fired from a `setTimeout`,
@@ -669,7 +671,7 @@ So a build that wants the stricter contract does not have to guess at it: test
 the exit code — a mute with a written reason and a generated file are answers,
 not work.
 
-## Eleven test layers
+## Twelve test layers
 
     $ npm test
 
@@ -683,20 +685,21 @@ SQL tooling, and the suite refuses to call that a pass.
 |---|---|---|
 | 1 | `npm run vocabulary` | the tables the rules see through — an entry that matches nothing is invisible to every other layer |
 | 2 | `npm run lang-check` | both languages complete, and no sentence bypassing the dictionary |
-| 3 | `npm run negative` | code that must NOT be reported, with controls that must still fire |
-| 4 | `npm run golden` | recorded runs, field by field, fingerprints included |
-| 5 | `npm run amplify` | that the output depends on the input at all |
-| 6 | `npm run population` | that each finding's arithmetic describes a real group |
-| 7 | `npm run evidence` | that every cited neighbour exists and does what the finding says |
-| 8 | `npm run resilience` | fail loudly, never quietly |
-| 9 | `npm run readme` | that this page agrees with the tool, and what `npm pack` would ship |
-| 10 | `npm run known-answers` | the six hand-traced defects, as a contract |
-| 11 | `npm run packaged` | that the PACKAGE is the same program as the clone |
+| 3 | `npm run scope` | every sentence about what this tool reads, against `src/languages.mjs` — the code is the fact, the sentence is the claim |
+| 4 | `npm run negative` | code that must NOT be reported, with controls that must still fire |
+| 5 | `npm run golden` | recorded runs, field by field, fingerprints included |
+| 6 | `npm run amplify` | that the output depends on the input at all |
+| 7 | `npm run population` | that each finding's arithmetic describes a real group |
+| 8 | `npm run evidence` | that every cited neighbour exists and does what the finding says |
+| 9 | `npm run resilience` | fail loudly, never quietly |
+| 10 | `npm run readme` | that this page agrees with the tool, and what `npm pack` would ship |
+| 11 | `npm run known-answers` | the six hand-traced defects, as a contract |
+| 12 | `npm run packaged` | that the PACKAGE is the same program as the clone |
 
 Every layer has a negative check: it was broken on purpose, seen to fail, and
 reverted. A test that cannot be made to fail is not a test.
 
-Layer 11 is the one that was missing for four releases. The other ten run the clone,
+Layer 12 is the one that was missing for four releases. The other eleven run the clone,
 and the clone always has every file the code reaches for — so `files` in
 `package.json` could drop something the runtime needs and no layer would
 notice. It packs the repository, installs the tarball, and scans one fixture

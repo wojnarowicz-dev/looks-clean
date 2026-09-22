@@ -32,6 +32,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const LAYERS = [
   ['vocabulary', 'the tables the rules see through'],
   ['lang-check', 'the two message languages are two languages'],
+  ['scope', 'every sentence about what it reads names the same set'],
   ['negative', 'what must not be reported'],
   ['golden', 'recorded runs, field by field'],
   ['amplify', 'the output depends on the input'],
