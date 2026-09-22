@@ -500,6 +500,66 @@ for (const [file] of PAGES) {
 }
 try { fs.rmSync(path.join(ROOT, '.looks-clean', 'readme-cmd.json'), { force: true }); } catch { /* fine */ }
 
+// ---------------------------------------------------------------- 2b. npx
+//
+// THE FIRST COMMAND ANYBODY TYPES, AND NOTHING WAS CHECKING IT. The page opens
+// with "run it without installing" and an `npx looks-clean` line, and the command
+// gate above never saw it: its pattern wants the prompt form, and the npx
+// block is written without one. Three of these four tools had the same hole;
+// the fourth caught it because its pattern happened to include npx.
+//
+// TWO THINGS ARE ASKED, because they fail differently. A wrong package name
+// sends the reader to somebody else's package — or to nothing — and no amount
+// of running the tool locally would show it. A stale sub-command or flag is
+// the ordinary drift the gate above already watches for, in a place it could
+// not reach.
+{
+  const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
+  const binNames = Object.keys(pkg.bin || {});
+
+  for (const [file] of PAGES) {
+    const npx = [...text[file].matchAll(/\bnpx\s+([a-z0-9@._-]+)([^\n`]*)/gi)]
+      .map(m => ({ pkg: m[1], rest: (m[2] || '').trim() }));
+
+    check(file + ' shows an npx line at all', npx.length > 0, npx.length + ' found');
+
+    // THE NAME ON THE PAGE IS THE NAME ON THE REGISTRY.
+    const wrongName = npx.filter(n => n.pkg.replace(/@.*$/, '') !== pkg.name);
+    check(file + ' npx names this package', wrongName.length === 0,
+      wrongName.length ? 'says ' + wrongName[0].pkg + ', package is ' + pkg.name
+        : pkg.name);
+
+    // AND THAT NAME HAS TO BE A BIN KEY, or `npx` finds the package and then
+    // has nothing to run.
+    check(file + ' npx name is an executable', binNames.includes(pkg.name),
+      binNames.length ? 'bin: ' + binNames.join(', ') : 'no bin at all');
+
+    // Every sub-command and flag on an npx line must still exist.
+    for (const n of npx) {
+      // TRAILING PUNCTUATION, BUT NOT AN ARGUMENT. `scan .` ends in a dot
+      // that IS the directory; stripping it made this gate run `scan` with no
+      // path, get exit 2 back, and call that a pass — this tool's own subject,
+      // inside the test written to prevent it. Only a dot glued to a word is
+      // punctuation.
+      const rest = n.rest.replace(/(?<=[A-Za-z0-9])[.,;:]$/, '').replace(/[,;:]$/, '').trim();
+      if (!rest) continue;
+      const args = rest.split(/\s+/)
+        .map(a => a.replace('<dir>', path.join(HERE, 'fixtures', 'project'))
+          .replace(/^\.$/, path.join(HERE, 'fixtures', 'project')));
+      const r = spawnSync(process.execPath, [CLI, ...args, '--config', CONFIG, '--top', '1'],
+        { cwd: ROOT, encoding: 'utf8', maxBuffer: 1e9, timeout: 120000 });
+      // 2 IS NOT ACCEPTABLE HERE. It means the run could not look — which is
+      // exactly what a reader gets from an example that no longer works.
+      const ok = r.status === 0 || r.status === 1;
+      check('runs: npx ' + pkg.name + ' ' + rest.slice(0, 28), ok,
+        ok ? 'exit ' + r.status
+          : 'exit ' + r.status + '  ' +
+            String(r.stderr || r.stdout).trim().split(/[\r\n]+/).slice(-1)[0].slice(0, 50));
+    }
+  }
+}
+
+
 // ---------------------------------------------------------------- 3. names
 const KNOWN_FLAGS = new Set(['rule', 'layer', 'minpop', 'top', 'verbose', 'all', 'json',
   'config', 'include-generated', 'lang', 'help', 'version', 'update', 'fail-on-state']);
