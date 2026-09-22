@@ -20,6 +20,32 @@ których awaria jest nieodróżnialna od pustego wyniku: tam, gdzie program mów
 
 Nie ma poglądów. Ma sąsiadów.
 
+## Co się zmieniło w 0.5.0
+
+**Jeśli uruchamiasz to w CI, przeczytaj ten wiersz: kody wyjścia się zmieniły.**
+`2` znaczy teraz *nic nie było do decyzji, a czegoś nie dało się odczytać* —
+pusty katalog, plik nie do sparsowania, ścieżka nie do otwarcia. Wcześniej
+wychodziło tam `0`, więc budowanie wycelowane w katalog bez kodu, który to
+narzędzie umie czytać, dostawało informację, że kod jest w porządku. Jeśli Twoje
+zadanie traktuje każdy niezerowy kod jako porażkę, nic się dla Ciebie nie
+zmienia. Jeśli je rozróżnia, `2` jest teraz osiągalne tam, gdzie wcześniej
+zwracało `0`. Pełna reguła w [Kodach wyjścia](#kody-wyjścia).
+
+Reszta:
+
+* Każdy przebieg niesie pole `summary` — `actionable`, `explained`,
+  `notApplicable`, `unreachable` — w JSON-ie i na ekranie, przy każdym kodzie.
+* `--fail-on-state` dla tych, którzy chcą `1` zawsze, gdy cokolwiek jest do
+  decyzji, a nie tylko gdy nowe.
+* Lista pokazuje jedną pozycję na miejsce. Wiersz łamiący dwie reguły był
+  wypisywany dwa razy, raz u góry i raz niżej; teraz to jedna pozycja nazywająca
+  obie.
+* Dart: `return` z `catch` jest wreszcie na ścieżce porażki, więc reguła 4 w
+  ogóle tam działa. Na każdym mierzonym projekcie dartowym zgłaszała zero.
+* `looks-clean diff` odpowiada zdaniem zamiast śladem stosu, gdy migawka ma
+  znacznik czasu, którego nie da się odczytać.
+* Jedenasta warstwa testowa uruchamia narzędzie **z paczki**, a nie z klonu.
+
 ## Uruchomienie bez instalowania
 
 ```

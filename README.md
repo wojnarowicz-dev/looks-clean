@@ -20,6 +20,33 @@ says *I found nothing* instead of *I could not check*.
 
 It does not have opinions. It has neighbours.
 
+## What changed in 0.5.0
+
+**If you run this in CI, read this line: the exit codes moved.** `2` now means
+*nothing was actionable AND something could not be read* — an empty directory, a
+file that will not parse, a path it cannot open. It used to exit `0` there, so a
+build pointed at a path holding no source this tool can read was being told the
+code was fine. If your job treats any non-zero code as failure, nothing changes
+for you. If it distinguishes them, `2` is now reachable on a run that previously
+returned `0`. The full rule is under [Exit codes](#exit-codes).
+
+Everything else:
+
+* Every run now carries a `summary` field — `actionable`, `explained`,
+  `notApplicable`, `unreachable` — in the JSON and on screen, at every exit code.
+* `--fail-on-state` for anyone who wants `1` whenever anything is actionable,
+  rather than only when it is new.
+* The list shows one entry per place. A line breaking two rules was printed
+  twice, once near the top and once further down; it is now one entry naming
+  both.
+* Dart: a `return` inside a `catch` is finally on the failure path, so rule 4
+  works there at all. It had reported nothing on every Dart project ever
+  measured.
+* `looks-clean diff` answers with a sentence instead of a stack trace when a
+  snapshot carries a timestamp it cannot read.
+* An eleventh test layer runs the tool **from the package** rather than from the
+  clone.
+
 ## Run it without installing
 
 ```

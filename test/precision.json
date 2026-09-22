@@ -9,7 +9,7 @@
     "A project that reports nothing is a result and is recorded with the reason. A zero for a reason that is not about precision — the wrong shape of project, or a defect in the tool — says so."
   ],
   "_twoNumbers": "Two measurements from two runs are kept side by side rather than one number corrected. The tool changed between them — test directories are now excluded by default — and so did the material. A single revised figure would hide both facts.",
-  "toolVersion": "0.4.0",
+  "toolVersion": "0.5.0",
   "measurements": [
     {
       "id": "2026-09-07-before-test-exclusion",
