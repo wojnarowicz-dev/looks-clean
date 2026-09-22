@@ -516,6 +516,8 @@ FIX
 Reproduce it from a clone — `test/fixtures/` ships with the repository, not
 with the package:
 
+<!-- lc:clone-only reason="test/fixtures/ ships with the repository, not with the package" -->
+
     $ looks-clean scan test/fixtures/project --rule default-on-error --top 1
 
 Everything above is a real run over `test/fixtures/project`, and

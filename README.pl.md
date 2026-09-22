@@ -516,6 +516,8 @@ POPRAWKA
 Odtwórz to u siebie z klonu — `test/fixtures/` jedzie z repozytorium, nie
 z paczką:
 
+<!-- lc:clone-only reason="test/fixtures/ jedzie z repozytorium, nie z paczka" -->
+
     $ looks-clean scan test/fixtures/project --rule default-on-error --top 1
 
 Wszystko powyżej to prawdziwy przebieg po `test/fixtures/project`, a

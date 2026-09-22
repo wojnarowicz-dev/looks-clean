@@ -500,6 +500,70 @@ for (const [file] of PAGES) {
 }
 try { fs.rmSync(path.join(ROOT, '.looks-clean', 'readme-cmd.json'), { force: true }); } catch { /* fine */ }
 
+// ------------------------------------------------- 2a. what the reader can run
+//
+// THE GATE USED TO MEASURE WHERE THE ERROR COULD NOT HAPPEN. Every command on
+// this page is executed above — in the CLONE, where `test/fixtures/` exists.
+// The person who installs from npm has no such directory: `files` ships bin,
+// src, vendor and the two pages. So an example pointing into `test/` passed
+// here for ever and failed for every reader, and there was no input at which
+// this layer would have said otherwise.
+//
+// That is shape two from the broken-measurement list — a check that passes
+// independently of the state of the world — inside a tool that exists to find
+// exactly that. The comment forty lines above predicted this class of defect
+// in a neighbouring tool and did not see it here.
+//
+// THE FIX IS NOT "RUN IT FROM THE PACKAGE" ALONE. Layer 11 already runs the
+// tool from an installed tarball. What was missing is cheaper and sharper:
+// ask whether the PATH an example names is a path the reader will have.
+//
+// A clone-only example is legitimate — reproducing a recorded run needs the
+// fixtures — but it has to SAY so in a way a machine can read, and be skipped
+// out loud. The prose above the block already said it; nothing enforced it,
+// so the next example added without the sentence would have gone unnoticed.
+{
+  const packed = JSON.parse(spawnSync('npm', ['pack', '--dry-run', '--json'],
+    { cwd: ROOT, encoding: 'utf8', shell: true, maxBuffer: 1e9 }).stdout);
+  const shipped = new Set(packed[0].files.map(f => f.path.replace(/\\/g, '/')));
+  const shipsDir = d => [...shipped].some(f => f === d || f.startsWith(d.replace(/\/+$/, '') + '/'));
+
+  check('the package list could be read', shipped.size > 0, shipped.size + ' files');
+
+  for (const [file] of PAGES) {
+    const lines = text[file].split(/\r?\n/);
+    let skipped = 0, checked = 0;
+    for (let i = 0; i < lines.length; i++) {
+      const m = lines[i].match(/^ {4}\$ looks-clean (.+)$/);
+      if (!m) continue;
+
+      // The marker is read from the six lines above the block, which is where
+      // the sentence that explains it already lives.
+      const near = lines.slice(Math.max(0, i - 6), i).join('\n');
+      const cloneOnly = /<!--\s*lc:clone-only\s+reason="([^"]+)"\s*-->/.exec(near);
+
+      // Anything that looks like a path and is not a flag or a placeholder.
+      const paths = m[1].split(/\s+/)
+        .filter(a => !a.startsWith('--') && !a.startsWith('<') && a !== '.')
+        .filter(a => /[/\\]/.test(a) || /^[\w.-]+\.\w+$/.test(a));
+
+      const outside = paths.filter(p => !shipped.has(p) && !shipsDir(p) && !p.startsWith('.looks-clean/'));
+      if (!outside.length) { checked++; continue; }
+
+      if (cloneOnly) {
+        skipped++;
+        console.log('  skip  looks-clean ' + m[1].slice(0, 40));
+        console.log('        ' + cloneOnly[1] + '   (' + outside.join(', ') + ')');
+        continue;
+      }
+      check(file + ' example points at something the reader has', false,
+        'looks-clean ' + m[1].slice(0, 30) + '  ->  ' + outside.join(', ') + ' is not in the package');
+    }
+    check(file + ' every example is runnable or marked clone-only', true,
+      checked + ' runnable, ' + skipped + ' marked');
+  }
+}
+
 // ---------------------------------------------------------------- 2b. npx
 //
 // THE FIRST COMMAND ANYBODY TYPES, AND NOTHING WAS CHECKING IT. The page opens
