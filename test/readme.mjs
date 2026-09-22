@@ -547,7 +547,13 @@ try { fs.rmSync(path.join(ROOT, '.looks-clean', 'readme-cmd.json'), { force: tru
         .filter(a => !a.startsWith('--') && !a.startsWith('<') && a !== '.')
         .filter(a => /[/\\]/.test(a) || /^[\w.-]+\.\w+$/.test(a));
 
-      const outside = paths.filter(p => !shipped.has(p) && !shipsDir(p) && !p.startsWith('.looks-clean/'));
+      // A PATH THE READER SUPPLIES IS NOT A PATH THIS PACKAGE OWES THEM.
+    // `./src/main/java` names a directory in THEIR project and is nowhere in
+    // this repository; `test/fixtures/project` is in this repository and does
+    // not ship. Only the second kind is a broken promise, and telling them
+    // apart is one question: does it exist here?
+    const outside = paths.filter(p => fs.existsSync(path.join(ROOT, p))
+      && !shipped.has(p) && !shipsDir(p) && !p.startsWith('.looks-clean/'));
       if (!outside.length) { checked++; continue; }
 
       if (cloneOnly) {
