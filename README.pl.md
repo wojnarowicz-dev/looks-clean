@@ -20,6 +20,31 @@ których awaria jest nieodróżnialna od pustego wyniku: tam, gdzie program mów
 
 Nie ma poglądów. Ma sąsiadów.
 
+## Co się zmieniło w 0.5.1
+
+**Nic w samym narzędziu. Trzy bramki, które nie mogły zaświecić na czerwono,
+teraz mogą.** Jeśli uruchamiasz to w CI, nic się nie zmienia: reguły, wyjście
+i kody wyjścia są te same co w 0.5.0.
+
+* **Bramka README stała w złym miejscu.** Każde polecenie z tej strony jest
+  wykonywane w KLONIE, gdzie `test/fixtures/` istnieje. Czytelnik, który
+  instaluje paczkę z npm, tego katalogu nie ma — więc przykład wskazujący do
+  `test/` przechodził tu zawsze i padał u wszystkich innych, i nie było
+  wejścia, przy którym ta warstwa powiedziałaby co innego. Teraz pyta, czy
+  ŚCIEŻKA z przykładu jedzie w paczce. Ścieżka czytelnika — `./src/main/java` —
+  to nie ścieżka tego pakietu, a odróżnia je jedno pytanie: czy istnieje
+  w tym repozytorium?
+* **Wiersz z `npx` na tej stronie nigdy nie był uruchamiany.** Teraz jest,
+  a pierwsza wersja tego sprawdzenia po cichu gubiła `.` z `scan .`,
+  uruchamiała samo polecenie, dostawała kod 2 i uznawała go za dopuszczalny.
+  Kod 2 nie jest już na liście dopuszczalnych.
+* **Nowa warstwa czyta każde zdanie o tym, co to narzędzie czyta, i zestawia
+  je z kodem.** Pomoc niosła kiedyś nagłówek polecenia obiecujący węższy zbiór
+  języków niż wiersz bezpośrednio pod nim, a dwie bramki stały zielone nad tą
+  sprzecznością, bo żadna nie zestawiała ich ze sobą. `src/languages.mjs` jest
+  faktem; zdanie wymieniające języki jest twierdzeniem o nim, a twierdzenie
+  węższe niż fakt jest tym, co jest błędne.
+
 ## Co się zmieniło w 0.5.0
 
 **Jeśli uruchamiasz to w CI, przeczytaj ten wiersz: kody wyjścia się zmieniły.**

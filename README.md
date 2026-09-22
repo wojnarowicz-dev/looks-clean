@@ -20,6 +20,31 @@ says *I found nothing* instead of *I could not check*.
 
 It does not have opinions. It has neighbours.
 
+## What changed in 0.5.1
+
+**Nothing about the tool. Three gates that could not go red now can.** If you
+run this in CI, nothing changes: the rules, the output and the exit codes are
+the same as 0.5.0.
+
+* **The README gate was standing in the wrong place.** Every command on this
+  page is executed from the CLONE, where `test/fixtures/` exists. The reader
+  who installs from npm has no such directory, so an example pointing into
+  `test/` passed here for ever and failed for everyone else, and there was no
+  input at which that layer would have said otherwise. It now asks whether the
+  PATH an example names is one the package actually ships. A reader's own path
+  — `./src/main/java` — is not this package's path, and the difference is one
+  question: does it exist in this repository?
+* **The `npx` line on this page had never been run.** It is now, and the first
+  version of that check quietly dropped the `.` from `scan .`, ran the bare
+  command, got exit 2 and called it acceptable. The accepted set no longer
+  includes 2.
+* **A new layer reads every sentence about what this tool reads and compares
+  it with the code.** The help once carried a command header promising a
+  narrower set of languages than the line directly under it, and two gates
+  stood green over the contradiction because neither put them side by side.
+  `src/languages.mjs` is the fact; a sentence naming languages is a claim
+  about it, and a claim narrower than the fact is what is wrong.
+
 ## What changed in 0.5.0
 
 **If you run this in CI, read this line: the exit codes moved.** `2` now means

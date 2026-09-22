@@ -1,6 +1,6 @@
 {
   "name": "looks-clean",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Finds places where a failure is indistinguishable from an empty result — by comparing a site with its own neighbours, not with a rulebook. JavaScript, TypeScript, Java and Dart.",
   "license": "MIT",
   "author": "Aleksander Wojnarowicz",
