@@ -1,6 +1,12 @@
 {
   "mutedCount": 0,
   "mutedByCommentCount": 0,
+  "summary": {
+    "actionable": 6,
+    "explained": 13,
+    "notApplicable": 0,
+    "unreachable": 0
+  },
   "version": 1,
   "tool": "looks-clean",
   "detector": "scan",

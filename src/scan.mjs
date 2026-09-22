@@ -16,7 +16,8 @@ import { makeFlag, hasFlag, valueOf } from './args.mjs';
 import { reportNonUtf8, reportUnreadable, unreadableFiles } from './input.mjs';
 import { collectFiles, readProject, notReadSummary } from './collect.mjs';
 import { noSourcesIn, noPopulation } from './population.mjs';
-import { prepare, diffHeader, resultExit } from './snapshot.mjs';
+import { prepare, diffHeader, resultExit, writeSnapshot, SNAPSHOT_VERSION } from './snapshot.mjs';
+import { exitCodeFor } from './summary.mjs';
 import { score } from './rank.mjs';
 import { loadConfig } from './config.mjs';
 import { extensionsShort } from './languages.mjs';
@@ -29,6 +30,7 @@ const flag = makeFlag(argv);
 const TOP = Math.max(1, +flag('top', 15) || 15);
 const MINPOP = Math.max(2, +flag('minpop', 3) || 3);
 const VERBOSE = hasFlag(argv, 'verbose');
+const FAIL_ON_STATE = hasFlag(argv, 'fail-on-state');
 
 const LAYER = String(flag('layer', 'file'));
 if (LAYER !== 'file' && LAYER !== 'dir' && LAYER !== 'root') {
@@ -59,7 +61,42 @@ const files = collectFiles(ROOT, cfg);
     console.log(t('root') + ROOT);
     console.log('');
     console.log(missing);
-    process.exit(0);
+
+    // NOTHING READ IS NOT A CLEAN RESULT. This branch said exactly that, in
+    // three careful sentences, and then exited 0 — so every build calling this
+    // tool on a path that holds no source it can parse was told the code was
+    // fine. The sentence was right and the number contradicted it, and the
+    // number is the half a build reads.
+    //
+    // The record is written too, when one was asked for. A machine that gets
+    // no file cannot tell "the tool did not run" from "the tool found
+    // nothing", which is the same mistake one layer further out.
+    const summary = { actionable: 0, explained: 0, notApplicable: 0, unreachable: 1 };
+    console.log('');
+    console.log(t('summaryLine', 0, 0, 0, 1));
+    console.log(t('summaryUnreachableFatal'));
+
+    const out = valueOf(argv, 'json');
+    if (out) {
+      writeSnapshot(out, {
+        mutedCount: 0,
+        mutedByCommentCount: 0,
+        summary,
+        version: SNAPSHOT_VERSION,
+        tool: 'looks-clean',
+        detector: 'scan',
+        root: ROOT,
+        args: [],
+        createdAt: new Date().toISOString(),
+        counts: {
+          files: 0, htmlBlocks: 0, functions: 0, handlers: 0, reads: 0,
+          findings: 0, passedOver: 0, noConvention: 0, parseErrors: 0,
+          generated: 0, unreadable: 0, notReadBehindExclusions: 0,
+        },
+        findings: [],
+      });
+    }
+    process.exit(2);
   }
 }
 
@@ -224,7 +261,26 @@ if (ir.parseErrors.length) {
 for (const u of files.unreadableDirs || [])
   console.log(t('inputUnreadable', ir.rel(u.dir), u.code));
 
-resultExit(w.newCount ? 1 : 0);
+// FOUR STATES, ONE LINE, BECAUSE A BUILD READS ONE NUMBER. The terminal can
+// tell "three findings" from "nothing to read"; a CI job gets an exit code,
+// and without this the two arrive identical.
+console.log('');
+console.log(t('summaryLine', w.snap.summary.actionable, w.snap.summary.explained,
+  w.snap.summary.notApplicable, w.snap.summary.unreachable));
+// THE COUNT IS ALWAYS IN THE LINE ABOVE, at every exit code. This sentence
+// only says what the count MEANS for the code being returned, and it has to
+// tell the two apart: a run that answered nothing while something was
+// unreadable is undermined, and a run that answered is not.
+if (w.snap.summary.unreachable > 0) {
+  console.log(w.snap.summary.actionable === 0
+    ? t('summaryUnreachableFatal')
+    : t('summaryUnreachablePartial', w.snap.summary.unreachable));
+}
+
+resultExit(exitCodeFor(w.snap.summary, {
+  newActionable: w.newCount,
+  failOnState: FAIL_ON_STATE,
+}));
 reportUnreadable(ir.rel);
 reportNonUtf8(ir.rel);
 

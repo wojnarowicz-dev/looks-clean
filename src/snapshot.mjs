@@ -18,6 +18,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { t } from './lang.mjs';
+import { summaryOf } from './summary.mjs';
 import { valueOf, hasFlag } from './args.mjs';
 
 export const SNAPSHOT_VERSION = 1;
@@ -92,6 +93,9 @@ export function buildSnapshot({ detector, root, args, counts, findings, cfg }) {
     // so the written key order does not depend on how far a run got, and
     // filled in by runSnapshot below.
     mutedByCommentCount: 0,
+    // Filled in by runSnapshot, once the mutes are applied and the finding
+    // count is the one a reader would act on. Declared here for the key order.
+    summary: null,
     version: SNAPSHOT_VERSION,
     tool: 'looks-clean',
     detector,
@@ -320,6 +324,11 @@ export function prepare(argv, payload) {
   // costs a reader of an older snapshot an `undefined`, which is what its
   // absence means; a bump costs them their history.
   snap.mutedByCommentCount = mutedByCommentList.length;
+
+  // AFTER THE MUTES, DELIBERATELY. A muted finding is explained, not
+  // actionable, so the two counts must be taken from a snapshot that has
+  // already had them removed.
+  snap.summary = summaryOf(snap);
 
   const diff = previous ? diffSnapshots(previous, snap) : null;
   const toShow = (!diff || showAll) ? snap.findings : [...diff.added, ...diff.changed];

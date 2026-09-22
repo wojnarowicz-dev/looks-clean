@@ -26,7 +26,7 @@ const COMMANDS = {
     // kept; the argument is just a directory.
     arg: '<dir>',
     descKey: 'cmdScan',
-    options: '--rule ' + RULE_IDS.join(',') + '  --layer file|dir|root  --minpop 3  --top 15  --verbose  --json <file>  --all',
+    options: '--rule ' + RULE_IDS.join(',') + '  --layer file|dir|root  --minpop 3  --top 15  --verbose  --json <file>  --all  --fail-on-state',
   },
   diff: { module: null, arg: '<previous.json> <current.json>', descKey: 'cmdDiff', options: '--all (also show unchanged findings)' },
   rank: { module: null, arg: '<run.json> [more.json...]', descKey: 'cmdRank', options: '--top 20' },

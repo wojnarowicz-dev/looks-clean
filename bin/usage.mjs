@@ -49,6 +49,18 @@ export function help(COMMANDS, code = 0) {
   w('  npx looks-clean diff  before.json after.json');
   w('  npx looks-clean rules');
   w('');
+  // THE EXIT CODES BELONG IN THE HELP, not only in a README nobody opens when
+  // wiring a build. `2` is the one that matters: it means the run could not
+  // look, and a job that treats it as failure-to-find has been told the
+  // opposite of what happened.
+  w(t('usageExitTitle'));
+  w(t('usageExit0'));
+  w(t('usageExit1'));
+  w(t('usageExit2'));
+  w(t('usageExit2b'));
+  w(t('usageExit2c'));
+  w(t('usageExit2d'));
+  w('');
   w(t('helpReading'));
   w(t('helpReading1'));
   w(t('helpReading2'));

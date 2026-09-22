@@ -90,8 +90,23 @@ const SCENARIOS = [];
 // way: an EXPECTATION is a group, every group must be satisfied, and any one
 // spelling inside a group satisfies it. A deliberate alternative now looks
 // like one, and a dead phrase has nowhere left to hide.
-const scenario = (name, damage, build, speaks, control = pristine) =>
-  SCENARIOS.push({ name, damage, build, speaks: speaks.map(x => (Array.isArray(x) ? x : [x])), control });
+// AND A SCENARIO MAY NAME THE CODE IT MUST RETURN.
+//
+// The states above grade what a run SAID. They do not grade what it returned,
+// and for most scenarios that is right — LOUD and SPOKE are both honest, and
+// which one a particular damage earns is not worth pinning. But an exit code
+// is a contract with a build, and a scenario about that contract needs to be
+// able to fail when the number is wrong while the sentence is still fine.
+//
+// Found by trying to break the rule this was written for: with the exit code
+// put back the way it was, the decisive scenario went from LOUD to SPOKE —
+// a different label, both of them passing, and the layer stayed green over a
+// build contract that had been reverted.
+const scenario = (name, damage, build, speaks, control = pristine, expectExit = null) =>
+  SCENARIOS.push({
+    name, damage, build, control, expectExit,
+    speaks: speaks.map(x => (Array.isArray(x) ? x : [x])),
+  });
 
 scenario('empty directory', 'nothing to read at all',
   () => ['scan', dir('empty')],
@@ -309,6 +324,41 @@ scenario('snapshot with an unreadable timestamp', 'createdAt is not a date',
     return ['diff', a, b];
   });
 
+// THE EXIT CODE THIS RELEASE IS ABOUT, and its control beside it.
+//
+// `2` means: nothing was actionable AND something could not be read. That is
+// this tool's own subject happening to its own output — a run reporting
+// nothing where it could not look. Before the summary field, this exited 0.
+//
+// The pair matters more than either half. The rule was written wider first —
+// any unreachable file at all means 2 — and measured: five of the nine corpora
+// used to measure this tool exited 2 permanently, two of them over a single
+// file out of hundreds. A code every repository shows every day is a code
+// nobody reads. So the second scenario holds the narrow edge in place: a run
+// that DID report something must not be dragged to 2 by one bad file.
+scenario('nothing found, and one file unreadable', 'zero findings over a file that will not parse',
+  () => {
+    const d = dir('unread-zero');
+    fs.writeFileSync(path.join(d, 'fine.js'), 'export function ok(a, b) {\n  return a + b;\n}\n');
+    fs.writeFileSync(path.join(d, 'broken.js'),
+      Buffer.from([0x00, 0xff, 0xfe, 0x7b, 0x7b, 0x7b, 0x00, 0x01, 0x02, 0x03]));
+    return ['scan', d];
+  },
+  ['nothing here was actionable', 'unreachable=1'], pristine, 2);
+
+// THE CONTROL. Same damage, but the run has something to say, so its answer
+// stands and the unread part is counted rather than fatal. If this ever goes
+// LOUD, the rule has been widened back and every real project is red again.
+scenario('something found, and one file unreadable', 'the answer stands, the gap is counted',
+  () => {
+    const d = copyFixture('project', dir('unread-some'));
+    fs.writeFileSync(path.join(d, 'broken.js'),
+      Buffer.from([0x00, 0xff, 0xfe, 0x7b, 0x7b, 0x7b, 0x00, 0x01, 0x02, 0x03]));
+    return ['scan', d];
+  },
+  [['could not be read; what is reported above stands']],
+  () => ['scan', copyFixture('project', dir('unread-none'))], 1);
+
 scenario('root does not exist', 'the scanned path is not there',
   () => ['scan', path.join(TMP, 'not-here')],
   ['not-here']);
@@ -432,11 +482,14 @@ for (const s of SCENARIOS) {
   // The phrase has to DISTINGUISH. Present in both means it says nothing about
   // the damage, however alarming it reads.
   const status = damaged.status;
-  const { state, hit, said, useless, missing } = verdict({
+  let { state, hit, said, useless, missing } = verdict({
     damagedOut: damaged.out, healthyOut: healthy.out, status, speaks: s.speaks,
   });
+  const wrongExit = s.expectExit !== null && status !== s.expectExit;
+  if (wrongExit) state = 'WRONG-EXIT';
 
   let detail = 'exit ' + status;
+  if (state === 'WRONG-EXIT') detail += '   expected exit ' + s.expectExit;
   if (state === 'STALE')
     detail += '   never printed: ' + missing.map(g => g.map(k => JSON.stringify(k)).join(' / ')).join(', ');
   if (state === 'SPOKE') detail += '   "' + hit(said[0])[0] + '"';
@@ -489,6 +542,7 @@ let propertyFailed = false;
 
 const silent = rows.filter(r => r.state === 'SILENT');
 const crashed = rows.filter(r => r.state === 'CRASH');
+const wrongExit = rows.filter(r => r.state === 'WRONG-EXIT');
 const skipped = rows.filter(r => r.state === 'SKIP');
 const loud = rows.filter(r => r.state === 'LOUD').length;
 const spoke = rows.filter(r => r.state === 'SPOKE').length;
@@ -513,5 +567,11 @@ if (verdictFailed) {
   console.log('\n  The scoring itself is wrong, so every row above is an opinion of');
   console.log('  unknown value — including the ones that say nothing is the matter.');
 }
-if (silent.length || crashed.length || propertyFailed || verdictFailed) process.exit(1);
+if (wrongExit.length) {
+  console.log('\n  Wrong exit code:');
+  for (const r of wrongExit)
+    console.log('    ' + r.name + ' — returned ' + String(r.detail).replace('exit ', '')
+      .split('   ')[0] + ', and a build reads that number and nothing else');
+}
+if (silent.length || crashed.length || wrongExit.length || propertyFailed || verdictFailed) process.exit(1);
 if (skipped.length) process.exit(2);

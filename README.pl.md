@@ -38,7 +38,7 @@ z przodu.
 <!-- lc:claim name=knownAnswersInScope value=6 -->
 <!-- lc:claim name=families value=9 -->
 <!-- lc:claim name=languages value=2 -->
-<!-- lc:claim name=messages value=143 -->
+<!-- lc:claim name=messages value=154 -->
 <!-- lc:claim name=fixtureFindings value=7 -->
 <!-- lc:claim name=fixturePlanted value=4 -->
 <!-- lc:claim name=cleanFindings value=0 -->
@@ -609,6 +609,38 @@ Dwa dalsze powody, wagą:
 
 Reszta po pomiarze — to ta sama dyscyplina, której narzędzie wymaga od
 czytelnika.
+
+## Kody wyjścia
+
+    0   przebiegło, nic nowego do decyzji
+    1   NOWE zgłoszenia do decyzji — albo, z `--fail-on-state`, jakiekolwiek
+    2   NIC nie było do decyzji, a czegoś nie dało się odczytać
+
+**`2` jest tym, który warto podpiąć.** Zapala się dokładnie wtedy, gdy własny
+temat tego narzędzia przydarza się jego własnemu wyjściu: przebieg zgłasza nic
+tam, gdzie nie mógł spojrzeć. Pusty katalog, plik nie do sparsowania, ścieżka
+nie do otwarcia — i żadnego znaleziska w zamian.
+
+Przebieg, który **coś** zgłosił, kończy się na `0` lub `1` nawet wtedy, gdy
+części nie dało się odczytać, bo jego odpowiedź się broni. To zostało zmierzone,
+a nie założone: przy pierwszej, szerszej regule — jakikolwiek nieodczytany plik
+znaczy `2` — pięć z dziewięciu korpusów używanych do mierzenia tego narzędzia
+wychodziło z `2` na stałe, dwa z nich przez jeden plik na setki. Kod, który
+każde repozytorium pokazuje codziennie, to kod, którego nikt nie czyta.
+
+**Liczba jest zawsze**, przy każdym kodzie wyjścia, w podsumowaniu i w JSON-ie:
+
+    podsumowanie: doDecyzji=9  wyjasnione=16  nieDotyczy=11  nieodczytane=1
+       1 plik(ow) nie dalo sie odczytac; to, co wyzej, jest prawda, a co w nich — nie wiadomo
+
+```json
+"summary": { "actionable": 9, "explained": 16, "notApplicable": 11, "unreachable": 1 }
+```
+
+Więc budowanie, które chce ostrzejszego kontraktu, nie musi go zgadywać:
+sprawdza `summary.unreachable` świadomie. `explained` i `notApplicable` nigdy
+nie wpływają na kod wyjścia — wyciszenie z wypisanym powodem i plik generowany
+to odpowiedzi, nie praca do wykonania.
 
 ## Jedenaście warstw testowych
 

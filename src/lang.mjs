@@ -52,6 +52,30 @@ const S = {
     en: '   More was excluded than was read. If your sources live under a path that looks\n   like a dependency or a test directory, they were skipped: read the list above\n   before taking this result for a clean one.',
     pl: '   Wykluczono wiecej, niz przeczytano. Jesli twoje zrodla leza pod sciezka\n   wygladajaca jak zaleznosc albo katalog testowy, zostaly pominiete: przeczytaj\n   liste wyzej, zanim uznasz ten wynik za czysty.' },
   'mutedByComment': { en: 'muted by comment: {0}', pl: 'wyciszone komentarzem: {0}' },
+  'summaryLine': {
+    en: 'summary: actionable={0}  explained={1}  notApplicable={2}  unreachable={3}',
+    pl: 'podsumowanie: doDecyzji={0}  wyjasnione={1}  nieDotyczy={2}  nieodczytane={3}' },
+  // TWO SENTENCES, NOT ONE. The first version said "(exit 2)" whichever code
+  // the run was about to return, so a scan of a project with one bad file and
+  // nine findings printed a number it was not going to use. A message that
+  // states the wrong exit code is worse than none: it is the page disagreeing
+  // with the tool, inside the tool.
+  'summaryUnreachableFatal': {
+    en: '   nothing here was actionable AND something could not be read, so this run proves nothing (exit 2)',
+    pl: '   nic tu nie bylo do decyzji, a czegos nie dalo sie odczytac, wiec ten przebieg niczego nie dowodzi (kod 2)' },
+  'summaryUnreachablePartial': {
+    en: '   {0} file(s) could not be read; what is reported above stands, what is in them is unknown',
+    pl: '   {0} plik(ow) nie dalo sie odczytac; to, co wyzej, jest prawda, a co w nich — nie wiadomo' },
+  'usageExitTitle': { en: 'EXIT CODES', pl: 'KODY WYJSCIA' },
+  'usageExit0': { en: '  0   ran, and nothing new is actionable', pl: '  0   przebieglo, nic nowego do decyzji' },
+  'usageExit1': { en: '  1   NEW actionable findings (with --fail-on-state: any actionable findings)', pl: '  1   NOWE zgloszenia do decyzji (z --fail-on-state: jakiekolwiek)' },
+  'usageExit2': { en: '  2   NOTHING was actionable AND something could not be read', pl: '  2   NIC nie bylo do decyzji, a czegos nie dalo sie odczytac' },
+  'usageExit2b': { en: '      (an empty directory, a file that will not parse, a path it cannot open)', pl: '      (pusty katalog, plik nie do sparsowania, sciezka nie do otwarcia)' },
+  'usageExit2c': { en: '      A run that DID report something exits 0 or 1; the unread part is still', pl: '      Przebieg, ktory COS zglosil, konczy sie 0 lub 1; nieodczytana czesc dalej' },
+  'usageExit2d': { en: '      counted, at every exit code, as unreachable= in the summary line.', pl: '      jest liczona, przy kazdym kodzie, jako nieodczytane= w podsumowaniu.' },
+  'cmdFailOnState': {
+    en: '--fail-on-state  exit 1 whenever anything is actionable, not only when it is new',
+    pl: '--fail-on-state  kod 1, gdy cokolwiek jest do decyzji, nie tylko gdy nowe' },
   'mutedByConfig': { en: 'muted by config file: {0}', pl: 'wyciszone plikiem konfiguracyjnym: {0}' },
   'diffVsPrevious': {
     en: 'diff vs previous run: NEW={0}  GONE={1}  CHANGED={2}  unchanged={3}   (--all shows the full list)',

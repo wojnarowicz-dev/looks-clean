@@ -37,7 +37,7 @@ on this page works the same way with `npx looks-clean` in front of it.
 <!-- lc:claim name=knownAnswersInScope value=6 -->
 <!-- lc:claim name=families value=9 -->
 <!-- lc:claim name=languages value=2 -->
-<!-- lc:claim name=messages value=143 -->
+<!-- lc:claim name=messages value=154 -->
 <!-- lc:claim name=fixtureFindings value=7 -->
 <!-- lc:claim name=fixturePlanted value=4 -->
 <!-- lc:claim name=cleanFindings value=0 -->
@@ -606,6 +606,39 @@ Two further reasons, in order of weight:
 
 The rest comes after measurement, which is the same discipline the tool asks of
 its reader.
+
+## Exit codes
+
+    0   ran, and nothing new is actionable
+    1   NEW actionable findings — or, with `--fail-on-state`, any at all
+    2   NOTHING was actionable AND something could not be read
+
+**`2` is the one worth wiring up.** It fires exactly when this tool's own
+subject happens to its own output: a run reporting nothing where it could not
+look. An empty directory, a file that will not parse, a path it cannot open —
+with no findings to show for the rest.
+
+A run that DID report something exits `0` or `1` even when part of it was
+unreadable, because its answer stands. That was measured rather than assumed:
+under the first, wider rule — any unreachable file at all means `2` — five of
+the nine corpora used to measure this tool exited `2` permanently, two of them
+over a single file out of hundreds. A code every repository shows every day is
+a code nobody reads.
+
+**The count is always there**, at every exit code, in the summary line and in
+the JSON:
+
+    summary: actionable=9  explained=16  notApplicable=11  unreachable=1
+       1 file(s) could not be read; what is reported above stands, what is in them is unknown
+
+```json
+"summary": { "actionable": 9, "explained": 16, "notApplicable": 11, "unreachable": 1 }
+```
+
+So a build that wants the stricter contract does not have to guess at it: test
+`summary.unreachable` on purpose. `explained` and `notApplicable` never affect
+the exit code — a mute with a written reason and a generated file are answers,
+not work.
 
 ## Eleven test layers
 

@@ -502,7 +502,7 @@ try { fs.rmSync(path.join(ROOT, '.looks-clean', 'readme-cmd.json'), { force: tru
 
 // ---------------------------------------------------------------- 3. names
 const KNOWN_FLAGS = new Set(['rule', 'layer', 'minpop', 'top', 'verbose', 'all', 'json',
-  'config', 'include-generated', 'lang', 'help', 'version', 'update']);
+  'config', 'include-generated', 'lang', 'help', 'version', 'update', 'fail-on-state']);
 
 for (const [file] of PAGES) {
   const flags = [...new Set([...text[file].matchAll(/`--([a-z-]+)/g)].map(m => m[1]))];
